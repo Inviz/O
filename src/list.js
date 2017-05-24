@@ -1,5 +1,6 @@
 // perform list operations over document
 O.list = function (left, right) {
+  var context = left;
   for (var i = 0; i < right.length; i++)
     context = O(left, right[i]);
   return context;
@@ -32,17 +33,18 @@ O.list.normalize = function(list) {
       }
   }
   if (simplified.length == 0)
-    return false;
+    return;
   if (simplified.length == 1)
     return simplified[0];
   return simplified;
 }
 
-O.list.invert = function (list, document) {
+O.list.invert = function (ours, theirs) {
   var inverted = [];
-  for (var i = 0; i < list.length; i++) {
-    inverted.unshift(O.invert(list[i], document));
-    document = O.apply(list[i], document);
+  var context = ours;
+  for (var i = 0; i < theirs.length; i++) {
+    inverted.unshift(O.invert(context, theirs[i]));
+    context = O(context, theirs[i]);
   }
   return inverted;
 }

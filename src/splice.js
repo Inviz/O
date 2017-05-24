@@ -119,7 +119,7 @@ O.splice.push = function(result, index, removing, insertion, feedback) {
     result[n] += diff;
   }
 
-  // prepend resulting range to another if it comes theirs after
+  // prepend resulting range to another if it comes right after
   if (result[skipping + target] === newIndex + O.splice.getLength(insertion)) {
     deletion += result[skipping + target + 1] 
     insertion = O.splice.value(result[skipping + target + 2], 0, 0, insertion)
@@ -127,12 +127,28 @@ O.splice.push = function(result, index, removing, insertion, feedback) {
   }
 
   // drop the range if it resulted to empty operation
-  if (deletion === 0 && O.splice.getLength(insertion) === 0)
-    return result.splice(target, skipping);
+  if (deletion === 0 && O.splice.getLength(insertion) === 0) {
+    var drop = true;
+  } else {
+    skipping -= 3;
+  }
 
-  // add range at proper position
-  else
-    return result.splice(target, skipping, newIndex, deletion, insertion)
+  // manual splice is 2x faster than native splice()
+  // because we don't need its returned value
+  if (skipping > 0) {
+    for (var j = target + skipping; j < result.length; j++)
+      result[j - skipping] = result[j]
+    result.length -= skipping;
+  } else if (skipping < 0)
+    for (var j = result.length; --j >= target;)
+      result[j - skipping] = result[j]
+
+  if (!drop) {
+    result[target]     = newIndex
+    result[target + 1] = deletion
+    result[target + 2] = insertion
+  }
+  return result;
 }
 
 O.splice.value = function(ours, offset, length, theirs) {
@@ -179,16 +195,21 @@ O.splice.typeof = function(ours, theirs) {
 }
 
 
-O.splice.invert = function (ours, theirs) {
+O.splice.invert = function (ours, theirs, normalized) {
+  if (!normalized)
+    theirs = O.splice.normalize(theirs)
   var inverse = Array(theirs.length);
+  var diff = 0;
   for (var i = 0, j = theirs.length; i < j; i += 3) {
     var offset    = theirs[i];
     var length    = theirs[i + 1];
     var operation = theirs[i + 2];
-
+    inverse[i] = diff + theirs[i]
+    inverse[i + 1] = O.splice.getLength(theirs[i + 2])
+    inverse[i + 2] = O.invert(theirs[i + 2], ours.slice(inverse[i], inverse[i] + theirs[i + 1]))
+    diff += O.splice.getShift(inverse, i)
   }
-
-  return
+  return inverse
 }
 
 O.splice.compare = function(ours, l, theirs, r) {

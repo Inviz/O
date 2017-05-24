@@ -1,7 +1,8 @@
 describe('O.list', function() {
   it ('should recognize arrays of arrays as lists in AST', function() {
     expect(O.typeof([[]])).toBe('list')
-    expect(O.typeof([])).toBe('set')
+    expect(O.typeof([])).toBe('list')
+    expect(O.typeof([], true)).toBe('set')
   })
 
   it ('should apply operations in order', function() {

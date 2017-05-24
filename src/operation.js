@@ -21,7 +21,7 @@ O.normalize = function(ours) {
 O.invert = function(ours, theirs) {
   var type = O[O.typeof(theirs)];
   if (type.invert)
-    type.invert(ours, theirs)
+    return type.invert(ours, theirs)
 }
 
 // Combine two operations as if they were executed in order
@@ -90,7 +90,7 @@ O.concat = function(ours, theirs) {
 }
 
 // Return type of operation used by AST node
-O.typeof = function(operation) {
+O.typeof = function(operation, nested) {
   if (operation != null && typeof operation == 'object') {
     if (operation instanceof Array)  {
       switch (typeof operation[0]) {
@@ -99,7 +99,11 @@ O.typeof = function(operation) {
         case 'string':
           return operation[0]
         case 'object':
-          return 'list'
+          return 'list';
+        case 'undefined':
+          if (nested)
+            return 'set';
+          return 'list';
       }
     } else {
       return 'merge';

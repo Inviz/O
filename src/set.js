@@ -10,8 +10,8 @@ O.set.getValue = function(value) {
   return value;
 }
 
-O.set.invert = function(old) {
-  return O.set.getValue(old);
+O.set.invert = function(ours, theirs) {
+  return O.set.getValue(theirs);
 }
 
 O.set.concat = function (ours, theirs) {

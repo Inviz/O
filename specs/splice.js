@@ -41,13 +41,19 @@ describe('O.splice', function() {
     expect(   O(O(alphabet, right), leftT))
     .toEqual( O(O(alphabet, left), rightT))
   }
+  function invert(left, right, rightE) {
+    var rightT = O.invert(left, right);
+    if (rightE)
+      expect(rightT).toEqual(rightE)
+    expect(O(O(left, right), rightT)).toEqual(left)
+  }
   it ('should use custom operation strings', function() {
     expect(O.splice('abcdefg', [3, 2, [['set', 'lol'], ['set', 'zol']]])).toEqual('abczolfg')
   })
   it ('should splice arrays', function() {
     expect(O.splice('abcdefg'.split(''), [3, 2, ['l', 'o', 'l']])).toEqual('abclolfg'.split(''))
   })
-  describe('.normalize()', function() {
+  describe('.normalize', function() {
     it ('should splice multiple chunks', function() {
       expect(O('12345678910', 
               [1, 1, 'AAA', // 1AAA345678910
@@ -241,7 +247,7 @@ describe('O.splice', function() {
 
   })
   
-  describe('.transform', function() {
+  describe('.splice', function() {
     it ('should resolve insertions at different positions', function() {
       transform([1, 0, '1', 5, 0, '22'], [3, 0, '2', 7, 0, '2'],
                 [1, 0, '1', 6, 0, '22'], [4, 0, '2', 10, 0, '2'])
@@ -328,7 +334,7 @@ describe('O.splice', function() {
                 [4, 1, '222'],  [1, 0, '111'])
     })
     it ('should resolve removals (10000 fuzzy runs)', function() {
-      for (var runs = 0; runs < 1; runs++) {
+      for (var runs = 0; runs < 10000; runs++) {
         var op1 = [];
         for (var i = 0, j = Math.floor(Math.random() * 10); i < j; i++) {
           op1.push(Math.floor(Math.random() * 10), Math.floor(Math.random() * 10) + 1, '')
@@ -341,7 +347,7 @@ describe('O.splice', function() {
       }
     })
     it ('should resolve replacements (100000 fuzzy runs)', function() {
-      for (var runs = 0; runs < 1; runs++) {
+      for (var runs = 0; runs < 10000; runs++) {
         var op1 = [];
         for (var i = 0, j = Math.floor(Math.random() * 27); i < j; i++) {
           op1.push(Math.floor(Math.random() * 32), Math.floor(Math.random() * 12) + 1, Array(Math.floor(Math.random() * 10)).join(Math.floor(Math.random() * 10)))
@@ -351,6 +357,46 @@ describe('O.splice', function() {
           op2.push(Math.floor(Math.random() * 32), Math.floor(Math.random() * 12) + 1, Array(Math.floor(Math.random() * 10)).join(Math.floor(Math.random() * 10)))
         }
         transform(op1, op2)
+      }
+    })
+  })
+
+  describe('.invert', function() {
+    it ('should invert splices', function() {
+      invert('abcdefghijklmnopqrst', [0, 3, "444444", 0, 1, "44444444"])
+
+
+      invert('abcdefg', [0, 0, 'xy', 3, 1, ''], [ 0, 2, '',1, 0, 'b'])
+      invert('abcdefg', [0, 0, 'xy', 3, 1, 'z'], [ 0, 2, '',1, 1, 'b'])
+      invert('abcdefg', [0, 0, 'xy', 3, 2, 'z'], [ 0, 2, '',1, 1, 'bc'])
+      invert('abcdefg', [0, 0, 'xy', 3, 1, 'yz'], [ 0, 2, '',1, 2, 'b'])
+      invert('abcdefg', [0, 0, 'xy', 3, 2, 'yz'], [ 0, 2, '',1, 2, 'bc'])
+
+      invert('abcdefg', [0, 0, '1'], [0, 1, ''])
+      invert('abcdefg', [0, 1, ''], [0, 0, 'a'])
+      invert('abcdefg', [0, 1, 'z'], [0, 1, 'a'])
+      invert('abcdefg', [0, 2, 'z'], [0, 1, 'ab'])
+      invert('abcdefg', [0, 1, 'yz'], [0, 2, 'a'])
+      invert('abcdefg', [0, 2, 'yz'], [0, 2, 'ab'])
+
+      invert('abcdefg', [0, 1, 'ab', 3, 1, ''], [ 0, 2, 'a',2, 0, 'c'])
+      invert('abcdefg', [0, 1, 'ab', 3, 1, 'z'], [ 0, 2, 'a',2, 1, 'c'])
+      invert('abcdefg', [0, 1, 'ab', 3, 2, 'z'], [ 0, 2, 'a',2, 1, 'cd'])
+      invert('abcdefg', [0, 1, 'ab', 3, 1, 'yz'], [ 0, 2, 'a',2, 2, 'c'])
+      invert('abcdefg', [0, 1, 'ab', 3, 2, 'yz'], [ 0, 2, 'a',2, 2, 'cd'])
+    })
+    it ('should invert splices (100000 fuzzy runs)', function() {
+
+      var letters = Array(226);
+      for (var i = 0; i < 226; i++)
+        letters[i] = String.fromCharCode('a'.charCodeAt(0) + i);
+      var alphabet = letters.join('')
+      for (var runs = 0; runs < 100; runs++) {
+        var op1 = [];
+        for (var i = 0, j = Math.floor(Math.random() * 27); i < j; i++) {
+          op1.push(Math.floor(Math.random() * 32), Math.floor(Math.random() * 12) + 1, Array(Math.floor(Math.random() * 10)).join(Math.floor(Math.random() * 10)))
+        }
+        invert(alphabet, op1)
       }
     })
   })

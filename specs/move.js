@@ -46,7 +46,7 @@ describe('O.move', function() {
     expect(O.move('abcdefghi', ['move', 2, 2, 6])).toBe(moveSplice('abcdefghi', 2, 2, 6))  
   }) 
 
-  describe('.transform', function() {
+  describe('.splice', function() {
     it ('should transform LTR moves against splices outside of range', function() {
       transform(['move', 11, 7, 19], [1, 3, 'XXXXXX'],
                 ['move', 14, 7, 22], [1, 3, 'XXXXXX'])
