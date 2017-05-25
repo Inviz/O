@@ -29,70 +29,75 @@ So it is easy to create different kinds of eventual consistency schemes for mult
 ### Example
 ```javascript
   
-  // Two peers start with same identical of data
-  var person = {name: 'Bob Woofs'};
+// Two peers start with same identical of data
+var person = {name: 'Bob Woofs'};
 
-  // One makes its changes
-  var change1 = {
-    name: [[0, 3, 'George'],  // change first name
-    title: 'Hustleman',       // set property
-    balance: [['+', 100]]     // add value
-  }
-  var own1 = O(person, change1); // {name: 'George Woofs', title: 'Hustleman', balance: 100};
+// One makes its changes
+var change1 = {
+  name: [[0, 3, 'George']],  // change first name
+  title: 'Hustleman',       // set property
+  balance: [['+', 100]]     // add value
+}
+var own1 = O(person, change1);
+expect(own1).toEqual({name: 'George Woofs', title: 'Hustleman', balance: 100})
 
-  // Another make conflicting changes
-  var change2 = {
-    name: [                   
-      ['move', 3, 5, 0],      // swap last & first name
-      ['move', 5, 3, 6]
-    ],
-    balance: [['-', 33]]      // remove value
-  };
-  var own2 = O(person, change2); // {name: 'Woofs Bob', title: 'Hustleman', balance: -33};
+// Another make conflicting changes
+var change2 = {
+  name: [                   
+    ['move', 4, 5, 0],      // swap last & first name
+    ['move', 5, 3, 9]
+  ],
+  balance: [['-', 33]]      // remove value
+};
+var own2 = O(person, change2);
+expect(own2).toEqual({name: 'Woofs Bob', balance: -33})
 
-  /* Now they both can apply each others commands.
-     They are guaranteed to have identical result
-     retaining semantic intent of both peers as much as possible */
-  O(own1, O.transform(change1, change2); // {name: 'Woofs George', title: 'Hustleman', balance: 67}
-  O(own2, O.transform(change2, change1); // {name: 'Woofs George', title: 'Hustleman', balance: 67}
+/* Now they both can apply each others commands.
+   They are guaranteed to have identical result
+   retaining semantic intent of both peers as much as possible */
+var result1 = O(own1, O.transform(change1, change2));
+var result2 = O(own2, O.transform(change2, change1));
+
+expect(result1).toEqual({name: 'Woofs George', title: 'Hustleman', balance: 67})
+expect(result2).toEqual({name: 'Woofs George', title: 'Hustleman', balance: 67})
 ```
 
 ### JSON changesets
 ```javascript
-  // unset `key` from object
-  {key: null}
+// unset `key` from object
+{key: null}
 
-  // set `key` to `'value'`
-  {key: 'value']}
+// set `key` to `'value'`
+{key: 'value']}
 
-  // insert `test` at 3d char of `this[key]`
-  {key: [3, 0, 'test']]}
+// insert `test` at 3d char of `this[key]`
+{key: [3, 0, 'test']]}
 
-  // delete characters from 3 to 8 of `this[key]`
-  {key: [3, 5, '']]}
+// delete characters from 3 to 8 of `this[key]`
+{key: [3, 5, '']]}
 
-  // replace characters from 3 to 8 of `this[key]` with substring `'hello'`
-  {key: [3, 5, 'hello']]}
+// replace characters from 3 to 8 of `this[key]` with substring `'hello'`
+{key: [3, 5, 'hello']]}
 
-  // move elements from 4 to 9 to the right by 1 position
-  {key: ['move', 4, 5, 10]}
+// move elements from 4 to 9 to the right by 1 position
+{key: ['move', 4, 5, 10]}
 
-  // apply compacted patchset of 3 sequential splices to `this[key]`
-  {key: [3, 5, 'hello', 10, 1, 'test', 21, 2, '']]}
+// apply compacted patchset of 3 sequential splices to `this[key]`
+{key: [3, 5, 'hello', 10, 1, 'test', 21, 2, '']]}
 
-  // apply operations over different keys
-  {'key':  [['move', 4, 5]],
-   'key2': [['move', 4, 5]]}
+// apply operations over different keys
+{'key':  [['move', 4, 5]],
+ 'key2': [['move', 4, 5]]}
 
-  // set deep key
-  {article: 
-    {person: {
-      name: 'Vasya'}}}
+// set deep key
+{article: 
+  {person: {
+    name: 'Vasya'}}}
 
-  // unset deep key
-  {article: 
-    {person: {
-      name: null}}}
+// unset deep key
+{article: 
+  {person: {
+    name: null}}}
 ```
 ## Acknowledgements
 This library takes inspiration from jot library (github.com/joshData/jot), but it has differences:
