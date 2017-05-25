@@ -1,100 +1,99 @@
 /////////////////////////////////////////////////////////////////////
 
-O['+'] = function(left, right) {
-  return left + right
+O['+'] = function(ours, theirs) {
+  return (ours || 0) + theirs[1]
 }
-O['+'].normalize = function(right) {
-  if (right[1] !== 0)
-    return right;
+O['+'].normalize = function(theirs) {
+  if (theirs[1] !== 0)
+    return theirs;
 }
-O['+'].invert = function(right) {
-  return ['-', right[1]];
+O['+'].invert = function(ours, theirs) {
+  return ['-', theirs[1]];
 }
-O['+'].concat = function(left, right) {
-  return ['+', left[1] + right[1]]
-}
-
-O['-'] = function(left, right) {
-  return left - right[1]
-}
-O['-'].invert = function(right) {
-  return ['+', right[1]];
-}
-O['-'].concat = function(left, right) {
-  return ['-', left[1] + right[1]]
+O['+'].concat = function(ours, theirs) {
+  return ['+', ours[1] + theirs[1]]
 }
 
-O['*'] = function(left, right) {
-  return left * right[1]
+O['-'] = function(ours, theirs) {
+  return (ours || 0) - theirs[1]
 }
-O['*'].normalize = function(right) {
-  if (right[1] !== 1)
-    return right;
+O['-'].invert = function(ours, theirs) {
+  return ['+', theirs[1]];
 }
-O['*'].invert = function(right) {
-  return ['/', right[1]];
-}
-O['*'].concat = function(left, right) {
-  return ['*', left[1] * right[1]];
+O['-'].concat = function(ours, theirs) {
+  return ['-', ours[1] + theirs[1]]
 }
 
-O['/'] = function(left, right) {
-  return left / right[1]
+O['*'] = function(ours, theirs) {
+  return (ours || 0) * theirs[1]
 }
-O['/'].normalize = function(right) {
-  if (right[1] !== 1)
-    return right;
+O['*'].normalize = function(theirs) {
+  if (theirs[1] !== 1)
+    return theirs;
 }
-O['/'].invert = function(right) {
-  return ['*', right[1]];
+O['*'].invert = function(ours, theirs) {
+  return ['/', theirs[1]];
 }
-O['/'].concat = function(left, right) {
-  return ['/', left[1] * right[1]];
+O['*'].concat = function(ours, theirs) {
+  return ['*', ours[1] * theirs[1]];
+}
+
+O['/'] = function(ours, theirs) {
+  return (ours || 0) / theirs[1]
+}
+O['/'].normalize = function(theirs) {
+  if (theirs[1] !== 1)
+    return theirs;
+}
+O['/'].invert = function(ours, theirs) {
+  return ['*', theirs[1]];
+}
+O['/'].concat = function(ours, theirs) {
+  return ['/', ours[1] * theirs[1]];
 }
 
 
-O['^'] = function(left, right) {
-  var result = left ^ right[1]
-  if (typeof left == 'boolean')
+O['^'] = function(ours, theirs) {
+  var result = (ours || 0) ^ theirs[1]
+  if (typeof ours == 'boolean')
     return Boolean(result)
   return result
 }
-O['^'].concat = function(left, right) {
-  return ['*', left[1] ^ right[1]];
+O['^'].concat = function(ours, theirs) {
+  return ['*', ours[1] ^ theirs[1]];
 }
 
 
-O.rot = function(left, right) {
-  return left + right[1] % right[2]
+O.rot = function(ours, theirs) {
+  return (ours || 0) + theirs[1] % theirs[2]
 }
-O.rot.normalize = function(right) {
-  if (right[1] !== 0)
-    return right;
+O.rot.normalize = function(theirs) {
+  if (theirs[1] !== 0)
+    return theirs;
 }
-O.rot.invert = function(right) {
-  return ['^', -right[1], right[2]];
+O.rot.invert = function(ours, theirs) {
+  return ['^', -theirs[1], theirs[2]];
 }
-O.rot.concat = function(left, right) {
-  if (left[2] === right[2])
-    return ['^', left[1] + right[1], left[2]];
+O.rot.concat = function(ours, theirs) {
+  if (ours[2] === theirs[2])
+    return ['^', ours[1] + theirs[1], ours[2]];
 }
 
 O['/'].transform =
 O['*'].transform =
 O['+'].transform =
 O['-'].transform =
-O['rot'].transform = function(left, right) {
-  if (left[0] === right[0]) {
-    if (left[0] != 'rot' || left[2] === right[2])
-      return [left, right]
+O['rot'].transform = function(ours, theirs, returnOurs) {
+  if (ours[0] === theirs[0]) {
+    if (ours[0] != 'rot' || ours[2] === theirs[2])
+      return [ours, theirs]
   }
 
-  // apply rights in reverse lexicographical order 
+  // apply theirss in reverse lexicographical order 
   // ("+" comes earlier than '/' in ascii table)
-  if (O.compare(left, right) < 0) {
-    return [
-      left,
-      [O.invert(left), left, right]
-    ];
+  if (O.compare(ours, theirs) < 0) {
+    debugger
+    return returnOurs ? ours : [O.invert(undefined, ours), theirs, ours];
   }
+  return theirs
 }

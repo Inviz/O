@@ -48,11 +48,11 @@ O.then = O.compose
 // the document will be at the same state as if transformed theirs
 // applied after original ours. A + B' = B + A'
 
-O.transform = function(ours, theirs, normalized) {
-  if (ours === undefined)
-    return undefined;
+O.transform = function(ours, theirs, normalized, retu) {
   if (theirs === undefined)
-    return ours;
+    return undefined;
+  if (ours === undefined)
+    return theirs;
 
   // Use hardcoded transform logic
   var theirsType = O.typeof(theirs);
@@ -70,9 +70,7 @@ O.transform = function(ours, theirs, normalized) {
     return O[oursType].transform(ours, theirs, normalized);
 
   if (O[theirsType].transform)
-    return O[theirsType].transform(theirs, ours, normalized);
-
-  return null;
+    return O[theirsType].transform(theirs, ours, normalized, true);
 }
 
 O.with = O.transform;

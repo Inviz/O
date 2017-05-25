@@ -53,8 +53,8 @@ So it is easy to create different kinds of eventual consistency schemes for mult
   /* Now they both can apply each others commands.
      They are guaranteed to have identical result
      retaining semantic intent of both peers as much as possible */
-  O(own1, O.transform(change1, change2); // {name: 'Woofs George', title: 'Hustleman', balance: 66}
-  O(own2, O.transform(change2, change1); // {name: 'Woofs George', title: 'Hustleman', balance: 66}
+  O(own1, O.transform(change1, change2); // {name: 'Woofs George', title: 'Hustleman', balance: 67}
+  O(own2, O.transform(change2, change1); // {name: 'Woofs George', title: 'Hustleman', balance: 67}
 ```
 
 ### JSON changesets

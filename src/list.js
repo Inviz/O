@@ -36,6 +36,38 @@ O.list.normalize = function(list) {
   return simplified;
 }
 
+O.list.transform = function (ours, theirs, normalized, returnOurs) {
+  
+  if (O.typeof(theirs) != 'list') {
+    if (returnOurs) {
+      var swap = ours
+      ours = [theirs]
+      theirs = swap
+    } else {
+      var transformed = theirs;
+      for (var i = 0; i < ours.length; i++) 
+        transformed = O.transform(ours[i], transformed);
+      return transformed;
+    }
+  }
+
+  var list = theirs.slice();
+  var transformed = [];
+  for (var j = 0; j < list.length; j++) {
+    for (var i = 0; i < ours.length; i++) {
+      list[j] = O.transform(ours[i], list[j]);
+      var o = O.transform(list[j], ours[i]);
+      for (var k = j + 1; k < list.length; k++)
+        list[k] = O.transform(o, list[k])
+    }
+    if (O.typeof(list[j]) == 'list')
+      transformed.push.apply(transformed, list[j]);
+    else
+      transformed.push(list[j])
+  }
+  return transformed;
+}
+
 O.list.invert = function (ours, theirs) {
   var inverted = [];
   var context = ours;

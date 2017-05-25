@@ -26,8 +26,8 @@ describe('O.set', function() {
     expect(O.transform(1, 'abc')).toBe(undefined)
     expect(O.transform('abc', 1)).toBe('abc')
 
-    expect(O.transform('abc', undefined)).toBe('abc')
-    expect(O.transform(undefined, 'abc')).toBe(undefined)
+    expect(O.transform('abc', undefined)).toBe(undefined)
+    expect(O.transform(undefined, 'abc')).toBe('abc')
 
     expect(O.transform('abc', null)).toBe('abc')
     expect(O.transform(null, 'abc')).toBe(undefined)
