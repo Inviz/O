@@ -4,7 +4,7 @@
 
 **O** library provides implementation of OT algorithm that allows changes in nested JSON objects as well as in text documents. Like with text-based OT algorithms, the storage and processing time is mostly proportional to amount of changed bytes, not the total bytes of the data. The cost of inserting one element into beginning of a giant array is trivial, however overwriting an array is a huge deal.
 
-**O** does not need access to the original json to manipulate changests, so it can transform them as if they happened **concurrently** (as if by one person at the same time) or sequentially (as if second person was editing after the other). The resulting changeset can be compacted to skip all intermediate steps not affecting result. 
+**O** does not need access to the original json to manipulate changests, so it can transform them as if they happened **concurrently** (as if by one person at the same time) or **sequentially** (as if second person was editing after the other). The resulting changeset can be compacted to skip all intermediate steps not affecting result. 
 
 So it is easy to create different kinds of eventual consistency schemes for multiple peers, be it dumb synchronization server or p2p collaboration. As soon as all peers ran their transformations, the history of operations can be restarted (i.e. a new version of object can be tagged), thus big documents may never grow out of control.
 
@@ -16,9 +16,48 @@ So it is easy to create different kinds of eventual consistency schemes for mult
 
 ## Performance and integration
 
-**O** is written with critical attention to complexity and performance of both runtime and startup time. It is meant to be possible to embed it into postgresql via PLV8 so it has almost no footprint.
+**O** is written with critical attention to complexity and performance of both runtime and startup time. All algorithms produce no memory garbage. It is meant to be possible to embed it into postgresql via PLV8 with smallest footprint possible.
 
 ## API
+
+### Methods
+* `O(state, command)` - Execute commands against given state
+* `O.transform(ours, theirs)` - Transform their commands to be applicable for us
+* `O.invert(state, command)` - Create a command that undoes the given one
+* `O.compose(command1, command2)` - Join two commands into a list
+
+### Example
+```javascript
+  
+  // Two peers start with same identical of data
+  var person = {name: 'Bob Woofs'};
+
+  // One makes its changes
+  var change1 = {
+    name: [[0, 3, 'George'],  // change first name
+    title: 'Hustleman',       // set property
+    balance: [['+', 100]]     // add value
+  }
+  var own1 = O(person, change1); // {name: 'George Woofs', title: 'Hustleman', balance: 100};
+
+  // Another make conflicting changes
+  var change2 = {
+    name: [                   
+      ['move', 3, 5, 0],      // swap last & first name
+      ['move', 5, 3, 6]
+    ],
+    balance: [['-', 33]]      // remove value
+  };
+  var own2 = O(person, change2); // {name: 'Woofs Bob', title: 'Hustleman', balance: -33};
+
+  /* Now they both can apply each others commands.
+     They are guaranteed to have identical result
+     retaining semantic intent of both peers as much as possible */
+  O(own1, O.transform(change1, change2); // {name: 'Woofs George', title: 'Hustleman', balance: 66}
+  O(own2, O.transform(change2, change1); // {name: 'Woofs George', title: 'Hustleman', balance: 66}
+```
+
+### JSON changesets
 ```javascript
   // unset `key` from object
   {key: null}

@@ -10,10 +10,10 @@ var O = function(ours, theirs) {
 this.O = O;
 
 // Simplify operation if it's possible
-O.normalize = function(ours) {
+O.normalize = function(ours, argument) {
   var type = O[O.typeof(ours)];
   if (type.normalize)
-    return type.normalize(ours)
+    return type.normalize(ours, argument)
   return ours;
 }
 

@@ -20,31 +20,118 @@ O.move.normalize = function(ours, makeRTL) {
   if (ours[1] < ours[3]) {
     if (ours[1] + ours[2] === ours[3])
       return;
-    if (makeRTL) {
+    if (makeRTL === true)
       return ['move', ours[1] + ours[2], ours[3] - ours[1] - ours[2], ours[1]]
-    }
   } else {
-    if (ours[1] - ours[2] === ours[3])
-      return;
+    if (makeRTL === false)
+      return ['move', ours[3], ours[1] - ours[3], ours[1] + ours[2]]
   }
   return ours;
 }
 
-O.move.invert = function(ours) {
-  if (ours[2] > ours[0])
-    return ['move', ours[2] - ours[1], ours[1], ours[0]];
+O.move.invert = function(ours, theirs) {
+  if (theirs[1] < theirs[3])
+    return ['move', theirs[3] - theirs[2], theirs[2], theirs[1]];
   else
-    return ['move', ours[2], ours[1], ours[0] + ours[1]];
+    return ['move', theirs[3], theirs[2], theirs[1] + theirs[2]];
 }
 
 O.move.concat = function(ours, theirs) {
-  if (ours[2] == theirs[2] && ours[3] == theirs[3])
+  if (ours[2] == theirs[2] && ours[3] == theirs[1])
     return ['move', ours[1], ours[2], theirs[3]]
+  return ours
 }
 
+// Moves are normalized to LTR before transformation
+// When two moves attempt to reposition same sub-sequence, 
+// move that shifts if further away does it, while
+// the other move shrinks. 
 
-O.move.move = function() {
+// There're three possible conflict scenarios in two ltr moves
+// 1. Moves can attempt to reposition same subsequence
+// 2. Moves can have intersecting part
+// 3. Moves can interleave, one shifting another
 
+// Additionally, each scenario has 3 possible situations:
+// 1. Right move target position is after left move's
+// 2. Left moves target position is before/equal to right's move
+// 3. Left move inserts into right move's source range
+
+// So that leaves us with 10 total branches or so. 
+O.move.move = function(ours, theirs, normalized) {
+  var rtl = theirs[1] > theirs[3];
+  if (!normalized) {
+    theirs = O.move.normalize(theirs, false)
+    ours = O.move.normalize(ours, false)
+  }
+  if (!theirs)
+    return
+  if (!ours)
+    return theirs
+
+  var oursFirst = (theirs[1] > ours[1] || theirs[1] == ours[1] && ours[2] > theirs[2])
+  var l = oursFirst ? ours : theirs;
+  var r = oursFirst ? theirs : ours;
+
+  // Moving same range: farthest move takes over
+  if (l[1] == r[1] && l[2] == r[2]) {
+    if (l[3] > r[3] && !oursFirst)
+      var move = ['move', l[1] + r[3] - r[2] - r[1], l[2], l[3]]
+    else if (l[3] <= r[3] && oursFirst)
+      var move = ['move', r[1] + l[3] - l[2] - l[1], r[2], r[3]]
+    else return
+
+  // Left range contains right range: let smaller range do its move
+  } else if (l[1] + l[2] >= r[1] + r[2]) {
+    if (r[3] < l[1] + l[2]) {
+      move = oursFirst ? ['move', r[1] + l[3] - l[2] - l[1], r[2], r[3] + l[3] - l[2] - l[1]]
+                       : l
+    } else if (l[3] > r[3]) {
+      move = oursFirst ? ['move', r[1] + l[3] - l[2] - l[1], r[2], r[3] - l[2]]
+                       : ['move', l[1], l[2] - r[2], l[3]]
+      rtl  = oursFirst
+    } else {
+      move = oursFirst ? ['move', l[3] - l[2] + (r[1] - l[1]), r[2], r[3]]
+                       : ['move', l[1], l[2] - r[2], l[3] - r[2]]
+    }
+
+  // Ranges intersect: fartherst move gets bigger slice
+  } else if (l[1] < r[1] + r[2] && l[1] + l[2] >= r[1]) {
+    var intersection = l[1] + l[2] - r[1]
+    var before = l[2] - intersection;
+    var after = r[2] - intersection;
+
+    if (l[3] > r[1] && l[3] < r[1] + r[2]) {
+      move = oursFirst ? ['move', l[1], r[2] + before, r[3]]
+                       : [['move', r[3] - r[2], intersection, l[3] + (r[3] - r[2] - r[1])],
+                          ['move', l[1], before, l[3] - intersection + (r[3] - r[2] - r[1])]]
+    } else if (l[3] > r[3]) {
+      move = oursFirst ? ['move', l[1], after, r[3] - intersection - before]
+                       : [['move', r[3] - r[2], intersection, l[3]],
+                          ['move', l[1], before, l[3] - intersection]]
+    } else {
+      move = oursFirst ? [O.move.normalize(['move', l[1], after, r[3]], false),
+                          ['move', l[3] - l[2] + before - after, intersection, r[3] - after]]
+                       : ['move', l[1], l[2] - intersection, l[3] - l[2] + before - after]
+    }
+
+  // Left range inserts into right
+  } else if (l[3] > r[1] && l[3] < r[1] + r[2]) {
+    move = oursFirst ? ['move', r[1] - l[2], r[2] + l[2], r[3]]
+                     : ['move', l[1], l[2], l[3] + (r[3] - r[2] - r[1])]
+  // Ranges interleave: one inserts between another
+  } else if (l[3] > r[3] && r[1] < l[3]) {
+    move = oursFirst ? ['move', r[1] - l[2], r[2], r[3] - l[2]]
+                     : l
+  } else if (l[3] < r[3] && r[1] < l[3]) {
+    move = oursFirst ? ['move', r[1] - l[2], r[2], r[3]]
+                     : ['move', l[1], l[2], l[3] - r[2]]
+  // Ranges insert into the same position, left first
+  } else if (l[3] === r[3]) {
+    move = oursFirst ? ['move', r[1] - l[2], r[2], r[3] - l[2]]
+                     : l
+  }
+  return move ? O.normalize(move) : O.move.normalize(theirs, rtl)
 }
 
 O.move.splice = function(ours, theirs, normalized, returnOurs) {
@@ -70,7 +157,6 @@ O.move.splice = function(ours, theirs, normalized, returnOurs) {
     var removing = theirs[t + 1];
     var insertion = theirs[t + 2];
     var length = O.splice.getLength(insertion);
-    var change = length - removing;
 
     // both source and target positions are consumed by single splice
     if (from >= index && from + count <= index + removing &&
@@ -87,7 +173,7 @@ O.move.splice = function(ours, theirs, normalized, returnOurs) {
     // splice happens within move source
     } else if (from <= index && from + count >= index + removing) {
       O.splice.push(splice, to + (index - from) - count, removing, insertion)
-      count += change
+      count += length - removing
 
     // Splice intersects with left boundary of moved range
     } else if (index < from && index + removing > from) {
@@ -144,9 +230,9 @@ O.move.splice = function(ours, theirs, normalized, returnOurs) {
       O.splice.push(splice, index, removing, insertion)
     }
     if (index < from)
-      from += change
+      from += length - removing
     if (index < to)
-      to += change
+      to += length - removing
   }
   return returnOurs ? O.move.normalize(['move', from, count, to], rtl) : splice;
 }

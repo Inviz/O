@@ -2,7 +2,7 @@
 O.list = function (left, right) {
   var context = left;
   for (var i = 0; i < right.length; i++)
-    context = O(left, right[i]);
+    context = O(context, right[i]);
   return context;
 }
 
@@ -19,17 +19,14 @@ O.list.normalize = function(list) {
     else
       for (var j = simplified.length; j--;) {
         var concatenated = O.concat(simplified[j], list[i]);
-        if (concatenated == null) {
-          //if (!optimize)
-          //  break;
-          simplified.splice(j + 1, 0, concatenated)
+        if (concatenated === undefined)  {
+          simplified.splice(j, 1);
+        } else if (concatenated === simplified[j]) {
+          simplified.splice(j + 1, 0, list[i])
         } else {
-          if (concatenated === false)  {
-            simplified.splice(j, 1);
-          } else {
-            simplified[j] = concatenated
-          }
-        } 
+          simplified[j] = concatenated
+        }
+        break;
       }
   }
   if (simplified.length == 0)

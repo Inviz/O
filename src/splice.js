@@ -115,7 +115,7 @@ O.splice.push = function(result, index, removing, insertion, feedback) {
       skipping += 3;
     }
 
-    // shift following ranges to keep ascending order
+    // shift following positions to propagate the change
     result[n] += diff;
   }
 
@@ -133,8 +133,8 @@ O.splice.push = function(result, index, removing, insertion, feedback) {
     skipping -= 3;
   }
 
-  // manual splice is 2x faster than native splice()
-  // because we don't need its returned value
+  // Hottest performance spot in the library: 
+  // custom Array.splice reimplementation doubles total throughput
   if (skipping > 0) {
     for (var j = target + skipping; j < result.length; j++)
       result[j - skipping] = result[j]
@@ -220,7 +220,7 @@ O.splice.compare = function(ours, l, theirs, r) {
   return O.compare(O.splice.getValue(ours[l + 2]), O.splice.getValue(theirs[r + 2]))
 }
 
-O.splice.splice = function(ours, theirs, normalized) {
+O.splice.splice = function(ours, theirs, normalized, safe) {
   if (!normalized) {
     ours = O.splice.normalize(ours)
     theirs = O.splice.normalize(theirs)

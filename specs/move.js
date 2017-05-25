@@ -1,20 +1,5 @@
 describe('O.move', function() {
-  var moveSplice = function(source, from, count, to) {
-    if (typeof source == 'string')
-      var array = source.split('');
-    else
-      var array = source.slice()
-    var removed = array.splice(from, count);
-    array.splice.apply(array, [
-      from < to ? to - count : to, 
-      0
-    ].concat(removed))
-
-    if (typeof source == 'string')
-      return array.join('');
-    return array
-  }
-
+  
   var letters = Array(226);
   for (var i = 0; i < 226; i++)
     letters[i] = String.fromCharCode('a'.charCodeAt(0) + i);
@@ -38,13 +23,124 @@ describe('O.move', function() {
     .toEqual( O(O(alphabet, left), rightT))
   }
 
+  function invert(left, right, rightE) {
+    var rightT = O.invert(left, right);
+    if (rightE)
+      expect(rightT).toEqual(rightE)
+    expect(O(O(left, right), rightT)).toEqual(left)
+  }
   it('should move LTR', function() {
-    expect(O.move('abcdefghi', ['move', 2, 2, 6])).toBe(moveSplice('abcdefghi', 2, 2, 6))  
+    expect(O.move('abcdefghi', ['move', 2, 2, 6])).toBe('abefcdghi')  
   })
 
   it ('should move RTL', function() {
-    expect(O.move('abcdefghi', ['move', 2, 2, 6])).toBe(moveSplice('abcdefghi', 2, 2, 6))  
+    expect(O.move('abcdefghi', ['move', 6, 2, 2])).toBe('abghcdefi')  
   }) 
+  describe('.move', function() {
+    it('should transform non-intersecting moves', function() {
+      transform(["move", 13, 1, 21], ["move", 16, 3, 21],
+                ["move", 13, 1, 21], ["move", 15, 3, 20]);
+      transform(['move', 0, 1, 5], ['move', 3, 7, 11],
+                ['move', 0, 1, 6], ['move', 2, 8, 11]);
+      transform(['move', 0, 1, 2], ['move', 3, 1, 5],
+                ['move', 0, 1, 2], ['move', 3, 1, 5]);
+      transform(['move', 2, 1, 0], ['move', 3, 1, 5],
+                ['move', 2, 1, 0], ['move', 3, 1, 5]);
+    })
+    it('should transform contained moves', function() {
+      transform(["move", 15, 6, 24], ["move", 16, 2, 23], 
+                ["move", 15, 4, 24], ["move", 19, 2, 17]);
+
+      transform(["move", 16, 2, 22], ["move", 13, 10, 28],
+                ["move", 21, 2, 27], ["move", 13, 10, 28]);
+
+      transform(['move', 20, 9, 34], ['move', 21, 4, 30],
+                ['move', 20, 5, 34], ['move', 26, 4, 21]);
+
+      transform(['move', 0, 10, 17], ['move', 2, 5, 9],
+                ['move', 0, 10, 17], ['move', 9, 5, 16]);
+
+      transform(['move', 0, 2, 5], ['move', 0, 1, 3],
+                ['move', 0, 1, 5], ['move', 3, 1, 1]);
+
+      transform(['move', 0, 3, 4], ['move', 2, 1, 5],
+                ['move', 0, 2, 3], ['move', 3, 1, 5]);
+
+      transform(['move', 0, 3, 4], ['move', 2, 1, 5],
+                ['move', 0, 2, 3], ['move', 3, 1, 5]);
+
+      transform(['move', 0, 2, 3], ['move', 1, 1, 5],
+                ['move', 0, 1, 2], ['move', 2, 1, 5]);
+
+      transform(['move', 0, 3, 4], ['move', 1, 1, 5],
+                ['move', 0, 2, 3], ['move', 2, 1, 5]);
+
+      transform(['move', 0, 2, 5], ['move', 1, 1, 3],
+                ['move', 0, 1, 5], ['move', 4, 1, 1]);
+
+
+
+      transform(['move', 0, 2, 5], ['move', 1, 1, 5],
+                ['move', 0, 1, 4], undefined);
+    })
+
+
+    it('should transform intersecting moves', function() {
+      transform(["move", 12, 11, 24], ["move", 12, 11, 27],
+                undefined,            ["move", 13, 11, 27]);
+      transform(['move', 22, 8, 38], ['move', 19, 5, 32],
+                [['move', 19, 6, 38],
+                ['move', 24, 2, 32]], ['move', 19, 3, 24]);
+
+
+      transform(['move', 0, 2, 4], ['move', 1, 3, 7],
+                undefined, [['move', 0, 2, 7],
+                                    ['move', 1, 1, 5]]);
+
+      transform(['move', 0, 7, 11], ['move', 3, 11, 17],
+                [['move', 6, 4, 14],
+                ['move', 0, 3, 10]], ['move', 0, 14, 17]);
+
+      transform(['move', 0, 2, 6], ['move', 1, 3, 5],
+                [['move', 2, 1, 6],
+                ['move', 0, 1, 5]], ['move', 0, 2, 3]);
+
+      transform(['move', 0, 2, 6], ['move', 1, 3, 5],
+                [['move', 2, 1, 6],
+                ['move', 0, 1, 5]], ['move', 0, 2, 3]);
+
+      transform(['move', 0, 2, 6], ['move', 1, 2, 4],
+                [['move', 2, 1, 6],
+                ['move', 0, 1, 5]], ['move', 0, 1, 2]);
+
+      transform(['move', 0, 2, 4], ['move', 1, 2, 6],
+                ['move', 0, 1, 2], [['move', 0, 1, 6],
+                                    ['move', 2, 1, 5]]);
+      transform(['move', 0, 2, 4], ['move', 1, 2, 7],
+                ['move', 0, 1, 2], [['move', 0, 1, 7],
+                                    ['move', 2, 1, 6]]);
+
+    })
+    it('should transform interleaving moves', function() {
+     
+      transform(['move', 0, 1, 19], ['move', 7, 3, 11],
+                ['move', 0, 1, 19], ['move', 6, 3, 10])
+      transform(['move', 0, 1, 11], ['move', 7, 3, 19],
+                ['move', 0, 1, 8],  ['move', 6, 3, 19])
+
+    })
+
+    it ('should resolve move commands (100000 fuzzy runs)', function() {
+      for (var runs = 0; runs < 100000; runs++) {
+        var op1 = ['move', 10 + Math.floor(Math.random() * 15), Math.floor(Math.random() * 15)]
+        op1.push(Math.random() > -0.5 ? op1[1] + op1[2] + Math.floor(Math.random() * 10) : op1[1] - Math.floor(Math.random() * 10))
+        var op2 = ['move', 10 + Math.floor(Math.random() * 15), Math.floor(Math.random() * 15)]
+        op2.push(Math.random() > -0.5 ? op2[1] + op2[2] + Math.floor(Math.random() * 10) : op2[1] - Math.floor(Math.random() * 10))
+        
+        transform(op1, op2)
+      }
+    })
+  });
 
   describe('.splice', function() {
     it ('should transform LTR moves against splices outside of range', function() {
@@ -255,6 +351,19 @@ describe('O.move', function() {
           op2.push(10 + Math.floor(Math.random() * 10), Math.floor(Math.random() * 5) + 1, Array(Math.floor(Math.random() * 10)).join(Math.floor(Math.random() * 10)))
         }
         transform(op1, op2)
+      }
+    })
+  })
+  describe('.invert', function() {
+    it ('should invert moves (10000 fuzzy runs)', function() {
+      var letters = Array(42);
+      for (var i = 0; i < 42; i++)
+        letters[i] = String.fromCharCode('a'.charCodeAt(0) + i);
+      var alphabet = letters.join('')
+      for (var runs = 0; runs < 10000; runs++) {
+        var op1 = ['move', 10 + Math.floor(Math.random() * 15), Math.floor(Math.random() * 15)]
+        op1.push(Math.random() > 0.5 ? op1[1] + op1[2] + Math.floor(Math.random() * 5) : op1[1] - Math.floor(Math.random() * 5))
+        invert(alphabet, op1)
       }
     })
   })
