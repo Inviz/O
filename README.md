@@ -71,19 +71,19 @@ expect(result2).toEqual({name: 'Woofs George', title: 'Hustleman', balance: 67})
 {key: 'value']}
 
 // insert `test` at 3d char of `this[key]`
-{key: [3, 0, 'test']]}
+{key: [[3, 0, 'test']]}
 
 // delete characters from 3 to 8 of `this[key]`
-{key: [3, 5, '']]}
+{key: [[3, 5, '']]}
 
 // replace characters from 3 to 8 of `this[key]` with substring `'hello'`
-{key: [3, 5, 'hello']]}
+{key: [[3, 5, 'hello']]}
 
 // move elements from 4 to 9 to the right by 1 position
-{key: ['move', 4, 5, 10]}
+{key: [['move', 4, 5, 10]]}
 
 // apply compacted patchset of 3 sequential splices to `this[key]`
-{key: [3, 5, 'hello', 10, 1, 'test', 21, 2, '']]}
+{key: [[3, 5, 'hello', 10, 1, 'test', 21, 2, '']]}
 
 // apply operations over different keys
 {'key':  [['move', 4, 5]],
