@@ -32,6 +32,13 @@ O.splice.normalize = function(ours, once) {
     return result;
 }
 
+O.splice.concat = function(ours, theirs) {
+  var result = ours.slice();
+  for (var t = 0, tt = theirs.length; t < tt; t += 3)
+    O.splice.push(result, theirs[t], theirs[t + 1], theirs[t + 2])
+  return result;
+}
+
 // Push a splice into a list, simplifying all intersections
 O.splice.push = function(result, index, removing, insertion, feedback) {
   if (!result) 
@@ -225,6 +232,10 @@ O.splice.splice = function(ours, theirs, normalized, safe) {
     ours = O.splice.normalize(ours)
     theirs = O.splice.normalize(theirs)
   }
+  if (ours === undefined)
+    return theirs;
+  if (theirs === undefined)
+    return
 
   var result = [];
   var shiftOurs = 0;

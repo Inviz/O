@@ -130,8 +130,8 @@ describe('O.move', function() {
 
     })
 
-    it ('should resolve move commands (100000 fuzzy runs)', function() {
-      for (var runs = 0; runs < 100000; runs++) {
+    it ('should resolve move commands (10000 fuzzy runs)', function() {
+      for (var runs = 0; runs < 10000; runs++) {
         var op1 = ['move', 10 + Math.floor(Math.random() * 15), Math.floor(Math.random() * 15)]
         op1.push(Math.random() > -0.5 ? op1[1] + op1[2] + Math.floor(Math.random() * 10) : op1[1] - Math.floor(Math.random() * 10))
         var op2 = ['move', 10 + Math.floor(Math.random() * 15), Math.floor(Math.random() * 15)]
@@ -329,8 +329,8 @@ describe('O.move', function() {
       transform(["move", 14, 4, 5],  [10, 5, "", 12, 1, ""],  
                 [ 'move', 10, 2, 5 ], [5, 1, "", 7, 1, "", 12, 4, ""] )
     })
-    it ('should resolve against multiple removals (100000 fuzzy runs)', function() {
-      for (var runs = 0; runs < 100000; runs++) {
+    it ('should resolve against multiple removals (10000 fuzzy runs)', function() {
+      for (var runs = 0; runs < 10000; runs++) {
         var op1 = ['move', 10 + Math.floor(Math.random() * 15), Math.floor(Math.random() * 15)]
         op1.push(Math.random() > 0.5 ? op1[1] + op1[2] + Math.floor(Math.random() * 5) : op1[1] - Math.floor(Math.random() * 5))
         var op2 = [];
@@ -342,8 +342,8 @@ describe('O.move', function() {
 
     })
 
-    it ('should resolve against multiple replacements (100000 fuzzy runs)', function() {
-      for (var runs = 0; runs < 100000; runs++) {
+    it ('should resolve against multiple replacements (10000 fuzzy runs)', function() {
+      for (var runs = 0; runs < 10000; runs++) {
         var op1 = ['move', 10 + Math.floor(Math.random() * 15), Math.floor(Math.random() * 15)]
         op1.push(Math.random() > 0.5 ? op1[1] + op1[2] + Math.floor(Math.random() * 10) : op1[1] - Math.floor(Math.random() * 10))
         var op2 = [];

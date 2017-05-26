@@ -48,7 +48,7 @@ O.then = O.compose
 // the document will be at the same state as if transformed theirs
 // applied after original ours. A + B' = B + A'
 
-O.transform = function(ours, theirs, normalized, retu) {
+O.transform = function(ours, theirs, normalized) {
   if (theirs === undefined)
     return undefined;
   if (ours === undefined)

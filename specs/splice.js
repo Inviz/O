@@ -346,7 +346,7 @@ describe('O.splice', function() {
         transform(op1, op2)
       }
     })
-    it ('should resolve replacements (100000 fuzzy runs)', function() {
+    it ('should resolve replacements (10000 fuzzy runs)', function() {
       for (var runs = 0; runs < 10000; runs++) {
         var op1 = [];
         for (var i = 0, j = Math.floor(Math.random() * 27); i < j; i++) {
@@ -385,13 +385,13 @@ describe('O.splice', function() {
       invert('abcdefg', [0, 1, 'ab', 3, 1, 'yz'], [ 0, 2, 'a',2, 2, 'c'])
       invert('abcdefg', [0, 1, 'ab', 3, 2, 'yz'], [ 0, 2, 'a',2, 2, 'cd'])
     })
-    it ('should invert splices (100000 fuzzy runs)', function() {
+    it ('should invert splices (10000 fuzzy runs)', function() {
 
       var letters = Array(226);
       for (var i = 0; i < 226; i++)
         letters[i] = String.fromCharCode('a'.charCodeAt(0) + i);
       var alphabet = letters.join('')
-      for (var runs = 0; runs < 100; runs++) {
+      for (var runs = 0; runs < 10000; runs++) {
         var op1 = [];
         for (var i = 0, j = Math.floor(Math.random() * 27); i < j; i++) {
           op1.push(Math.floor(Math.random() * 32), Math.floor(Math.random() * 12) + 1, Array(Math.floor(Math.random() * 10)).join(Math.floor(Math.random() * 10)))
