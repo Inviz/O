@@ -23,6 +23,14 @@ describe('O.list', function() {
 
   describe('.transform', function() {
     it ('should transform list against single operation', function() {
+      debugger
+      transform([['move', 4, 5, 0],  ['move', 5, 3, 9]],   [0, 3, 'George'],
+                [['move', 7, 5, 0],  ['move', 5, 6, 12]],  [6, 3, 'George'], 'Bob Woofs')
+      transform([['move', 0, 3, 9]],   [[0, 3, 'George']],
+                [['move', 0, 6, 12]],  [[6, 3, 'George']], 'Bob Woofs')
+      transform([['move', 0, 3, 9]],   [0, 3, 'George'],
+                [['move', 0, 6, 12]],  [6, 3, 'George'], 'Bob Woofs')
+
       transform([[0, 0, 'a'], [2, 0, 'b']], [4, 0, 'c'],
                 [[0, 0, 'a'], [2, 0, 'b']], [6, 0, 'c'])
 
@@ -37,7 +45,8 @@ describe('O.list', function() {
   for (var i = 0; i < 26; i++)
     letters[i] = String.fromCharCode('a'.charCodeAt(0) + i);
   var alphabet = letters.join('')
-  function transform(left, right, leftE, rightE) {
+  function transform(left, right, leftE, rightE, input) {
+    if (!input) input = alphabet
 
     var rightT = O.transform(left, right);
     var leftT  = O.transform(right, left);
@@ -45,10 +54,12 @@ describe('O.list', function() {
     if (arguments.length > 2) {
       expect(leftT).toEqual(leftE)
       expect(rightT).toEqual(rightE)
+      expect(   O(O(input, right), leftE))
+      .toEqual( O(O(input, left), rightE))
     }
 
     // ensure that both transformed sides produce the same result
-    expect(   O(O(alphabet, right), leftT))
-    .toEqual( O(O(alphabet, left), rightT))
+    expect(   O(O(input, right), leftT))
+    .toEqual( O(O(input, left), rightT))
   }
 })

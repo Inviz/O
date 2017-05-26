@@ -164,16 +164,16 @@ O.move.splice = function(ours, theirs, normalized, returnOurs) {
       O.splice.push(splice, index, removing, insertion)
       count = 0
 
+    // splice happens within move source
+    } else if (from <= index && from + count >= index + removing) {
+      O.splice.push(splice, to + (index - from) - count, removing, insertion)
+      count += length - removing
+
     // move source range is consumed
     } else if (from >= index && from + count <= index + removing) {
       O.splice.push(splice, to - count, count, '')
       O.splice.push(splice, index, removing - count, insertion)
       count = 0
-
-    // splice happens within move source
-    } else if (from <= index && from + count >= index + removing) {
-      O.splice.push(splice, to + (index - from) - count, removing, insertion)
-      count += length - removing
 
     // Splice intersects with left boundary of moved range
     } else if (index < from && index + removing > from) {

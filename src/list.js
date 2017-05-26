@@ -53,17 +53,19 @@ O.list.transform = function (ours, theirs, normalized, returnOurs) {
 
   var list = theirs.slice();
   var transformed = [];
+  for (var i = 0; i < ours.length; i++) {
+    list[0] = O.transform(ours[i], list[0]);
+    var o = O.transform(list[0], ours[i]);
+    for (var k = 1; k < list.length; k++)
+      list[k] = O.transform(o, list[k])
+
+  }
   for (var j = 0; j < list.length; j++) {
-    for (var i = 0; i < ours.length; i++) {
-      list[j] = O.transform(ours[i], list[j]);
-      var o = O.transform(list[j], ours[i]);
-      for (var k = j + 1; k < list.length; k++)
-        list[k] = O.transform(o, list[k])
-    }
-    if (O.typeof(list[j]) == 'list')
-      transformed.push.apply(transformed, list[j]);
-    else
-      transformed.push(list[j])
+
+      if (O.typeof(list[j]) == 'list')
+        transformed.push.apply(transformed, list[j]);
+      else
+        transformed.push(list[j])
   }
   return transformed;
 }
