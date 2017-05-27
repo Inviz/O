@@ -1,24 +1,28 @@
 // Applies operations to object keys
-O.merge = function(left, right, callback, allowNull) {
-  if (left === undefined)
-    left = this;
-  if (callback === undefined)
+O.merge = function(ours, theirs, callback, allowNull, arg) {
+  if (ours === undefined) {
+    if (theirs === undefined) 
+      return
+
+    ours = theirs instanceof Array ? [] : {}
+  }
+  if (callback === undefined) 
     callback = O
 
   var result;
-  for (var property in left) {
-    if (property in right)
-      var value = callback(left[property], right[property]);
+  for (var property in ours) {
+    if (property in theirs)
+      var value = callback(ours[property], theirs[property], arg);
     else
-      var value = callback(undefined, left[property])
+      var value = callback(undefined, ours[property], arg)
     if (value != null || allowNull)
       (result || (result = {}))[property] = value;
   }
 
-  for (var property in right) {
-    if (property in left) continue;
+  for (var property in theirs) {
+    if (property in ours) continue;
 
-    var value = callback(left[property], right[property]);
+    var value = callback(ours[property], theirs[property], arg);
     if (value != null || allowNull)
       (result || (result = {}))[property] = value;
   } 
@@ -27,21 +31,21 @@ O.merge = function(left, right, callback, allowNull) {
   return result;
 }
 
-O.merge.normalize = function (left) {
-  return O.merge(left, {}, O.normalize)
+O.merge.normalize = function (ours) {
+  return O.merge(ours, {}, O.normalize)
 }
 
-O.merge.invert = function (operations, context) {
+O.merge.invert = function (context, operations) {
   var inverted = {};
   for (var property in operations) 
     inverted[property] = O.invert(operations[property], context[property]);
   return inverted
 }
 
-O.merge.concat = function(left, right, callback) {
-  return O.merge(left, right, O.compose);
+O.merge.concat = function(ours, theirs, callback) {
+  return O.merge(ours, theirs, O, true);
 }
 
-O.merge.merge = function(left, right) {
-  return O.merge(left, right, O.transform, true);
+O.merge.merge = function(ours, theirs) {
+  return O.merge(ours, theirs, O.transform, true); 
 }

@@ -2,7 +2,7 @@
 O.move = function(ours, theirs) {
   if (theirs[1] < theirs[3])
     return ours.slice(0, theirs[1]).concat(
-      ours.slice(theirs[1]+theirs[2], theirs[3]),
+      ours.slice(theirs[1] + theirs[2], theirs[3]),
       ours.slice(theirs[1], theirs[1] + theirs[2]),
       ours.slice(theirs[3]));
   else
@@ -12,6 +12,14 @@ O.move = function(ours, theirs) {
       ours.slice(theirs[1] + theirs[2]));
 }
 
+/*
+  Any movement from right to left, can be seen
+  as movement of sequences between positions
+  to the right. O ensures commutativity of RTL 
+  move operations inverted to LTR. This property 
+  is used to reduce total code complexity of
+  transformations. 
+*/
 O.move.normalize = function(ours, makeRTL) {
   if (ours[1] === ours[3])
     return
@@ -39,25 +47,28 @@ O.move.invert = function(ours, theirs) {
 O.move.concat = function(ours, theirs) {
   if (ours[2] == theirs[2] && ours[3] == theirs[1])
     return ['move', ours[1], ours[2], theirs[3]]
-  return ours
+  return [ours, theirs]
 }
+/* # Transform MOVE against MOVE
+Moves are normalized to LTR before transformation
+When two moves attempt to reposition same sub-sequence, 
+move that shifts if further away does it, while
+the other move shrinks. 
 
-// Moves are normalized to LTR before transformation
-// When two moves attempt to reposition same sub-sequence, 
-// move that shifts if further away does it, while
-// the other move shrinks. 
+There're three possible conflict scenarios in two ltr moves
+1. Moves can attempt to reposition same subsequence
+2. Moves can have intersecting part
+3. Moves can interleave, one shifting another
 
-// There're three possible conflict scenarios in two ltr moves
-// 1. Moves can attempt to reposition same subsequence
-// 2. Moves can have intersecting part
-// 3. Moves can interleave, one shifting another
+Additionally, each scenario has 3 possible situations:
+1. Right move target position is after left move's
+2. Left moves target position is before/equal to right's move
+3. Left move inserts into right move's source range
 
-// Additionally, each scenario has 3 possible situations:
-// 1. Right move target position is after left move's
-// 2. Left moves target position is before/equal to right's move
-// 3. Left move inserts into right move's source range
-
-// So that leaves us with 10 total branches or so. 
+Combined with simple cases into consideration, 
+there are about dozen branches, doubled when computing
+their side of the story.
+*/
 O.move.move = function(ours, theirs, normalized) {
   var rtl = theirs[1] > theirs[3];
   if (!normalized) {
@@ -89,7 +100,6 @@ O.move.move = function(ours, theirs, normalized) {
     } else if (l[3] > r[3]) {
       move = oursFirst ? ['move', r[1] + l[3] - l[2] - l[1], r[2], r[3] - l[2]]
                        : ['move', l[1], l[2] - r[2], l[3]]
-      rtl  = oursFirst
     } else {
       move = oursFirst ? ['move', l[3] - l[2] + (r[1] - l[1]), r[2], r[3]]
                        : ['move', l[1], l[2] - r[2], l[3] - r[2]]
@@ -133,6 +143,34 @@ O.move.move = function(ours, theirs, normalized) {
   }
   return move ? O.normalize(move) : O.move.normalize(theirs, rtl)
 }
+
+/* # Transform MOVE against set of SPLICE commands
+Moves are normalized to LTR form during transformation.
+
+In simple scenarios, adding or removing subsequence should just
+change counters in move command. The  worst scenario however
+is a splice that starts within move range and spans all 
+the way to right removing target position. That results
+in three splices observed by peer doing move. 
+
+Transformation may split a splice into two smaller splices if:
+1. Splice can remove left boundary of moved range
+2. Splice can remove right boundary of moved range
+3. Splice can remove sequence starting before target, shifting move left 
+
+Two cases when move just needs to be updated:
+1. Splice can remove sub-sequence within moved range
+2. Splice can contain move source range and target
+3. Splice can happen between source and target
+4. Splice can happen somewhere before in the document
+
+There's a possibility that move is discarded altogether:
+1. Splice can remove everything between source and target
+2. Splice can remove moved range
+
+Or if splice happens outside of source range and move target,
+the move is unaffected 
+*/
 
 O.move.splice = function(ours, theirs, normalized, returnOurs) {
   if (!normalized && theirs.length > 3)

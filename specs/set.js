@@ -13,11 +13,11 @@ describe('O.set', function() {
     expect(O(undefined)).toBe(undefined)
   })
   it ('should overwrite value on concat', function() {
-    expect(O.concat('abc', 'cde')).toBe('cde')
-    expect(O.concat('abc', 1)).toBe(1)
-    expect(O.concat('abc', undefined)).toBe(undefined)
-    expect(O.concat('abc', null)).toBe(null)
-    expect(O.concat('abc', true)).toBe(true)
+    expect(O('abc', 'cde')).toBe('cde')
+    expect(O('abc', 1)).toBe(1)
+    expect(O('abc', undefined)).toBe('abc')
+    expect(O('abc', null)).toBe(null)
+    expect(O('abc', true)).toBe(true)
   })
   it ('should overwrite value on transform', function() {
     expect(O.transform('cde', 'abc')).toBe('cde')

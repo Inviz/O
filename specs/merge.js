@@ -22,6 +22,35 @@ describe('O.merge', function() {
     expect(output).toEqual({key: 'test', test: 'value'})
     expect(output).not.toBe(right)
   })
+  it ('should merge arrays of strings', function() {
+    var left = {
+      keys: ['test']
+    };
+    var right = {
+      keys: [[0, 0, ['value1']]],
+      things: [[0, 0, ['value2']]]
+    };
+    var output = O.merge(left, right);
+    expect(left).toEqual({keys: ['test']})
+    expect(output).toEqual({keys: ['value1', 'test'], things: ['value2']})
+    expect(output).not.toBe(right)
+  })
+
+  it ('should apply properties to objects in array', function() {
+    var left = {
+      keys: [{
+        name: 'Boris'
+      }]
+    };
+    var right = {
+      keys: [{0: {title: 'Thinker'}}],
+      things: {0: {title: 'Maker'}}
+    };
+    var output = O.merge(left, right);
+    expect(left).toEqual({keys: [{name: 'Boris'}]})
+    expect(output).toEqual({keys: [{name: 'Boris', title: 'Thinker'}], things: [{title: 'Maker'}]})
+    expect(output).not.toBe(right)
+  })
 
   it ('should deeply merge objects', function() {
     var left = {
@@ -72,10 +101,11 @@ describe('O.merge', function() {
       person: {
         hola: [[1, 2, 'test']],
         name: 'cde',
-        test: undefined
+        test: null
       }
     };
-    expect(O.concat(left, right)).toEqual({
+    debugger
+    expect(O(left, right)).toEqual({
       key: 'test', 
       person: {
         hola: [[3, 1, 'zzz'], [1, 2, 'test']],

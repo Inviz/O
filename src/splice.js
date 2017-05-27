@@ -1,14 +1,39 @@
-// Splice operations can be concatenated into a list, where
-// each expression needs all previous expressions applied
-// for absolute indecies to point to correct places.
+/*
+Early OT adopters used DEL/INS/REPLACE/RETAIN
+commands which are easier to implement, but make
+runtime processing more complex.
+It was difficult to compress and normalize big patches,
+especially so when interleaved with collaborative metadata. 
+It is even harder to predict outcomes of difficult multi-peer
+situations.
 
-// Splice list operations dont necessarily have to be sorted
-// from left to right and can intersect each other, 
-// O.splice will still produce proper result.
-// However to transform and concatenate splice lists, 
-// they are sorted and normalized to remove intersections.
+However there's a great insight in `jot` library, that
+all those operations can be seen as `splice(from, to, replacement)`
+command. Furthermore, any history of text/sequence editing 
+operations can be simplified to a list of non-intersecting
+splices. It makes resolving patches easier and gives additional
+leverage to keep semantic intent of peers preserved, by taking
+out the effect of unobserved changes.
+*/
+
+/*
+Splice operations can be concatenated into a list, where
+each expression needs all previous expressions applied
+to the state for absolute indecies to point to correct positions.
+
+Splice list operations don't necessarily have to be sorted
+from left to right and can intersect each other, 
+O.splice will still produce proper result.
+However to transform and concatenate splice lists, 
+they are sorted and normalized to remove intersections.
+*/
 O.splice = function(ours, theirs, normalized) {
-  var result = ours.slice();
+  if (ours)
+    var result = ours.slice();
+  else if (theirs[2] instanceof Array)
+    var result = []
+  else
+    var result = '';
   for (var i = 0, j = theirs.length; i < j; i += 3) { 
     var removed   = result.slice(theirs[i], theirs[i] + theirs[i + 1]);
     var type      = O.splice.typeof(removed, theirs[i + 2])
@@ -40,6 +65,17 @@ O.splice.concat = function(ours, theirs) {
 }
 
 // Push a splice into a list, simplifying all intersections
+/*
+  Patches captured in real world applications can be messy and 
+  have extra intermediate commands that are not visible in final result,
+  like when a writer rewords parts of the sentence a few times.
+
+  `O.splice.push` can be used to add SPLICE command into a list.
+  That effectively normalizes commands on insertion.
+  It means that the log is always compacted and splices 
+  are sorted in order of appearance in document without any intersection.
+  It is necessary for effective transformations.
+*/
 O.splice.push = function(result, index, removing, insertion, feedback) {
   if (!result) 
     return;
@@ -166,7 +202,7 @@ O.splice.value = function(ours, offset, length, theirs) {
       return ours.slice(0, offset).concat(theirs, ours.slice(offset + length))
     return ours.concat(theirs)
   }
-  return O.compose(ours, theirs)
+  return O(ours, theirs)
 }
 
 O.splice.getValue = function(value) {
@@ -227,6 +263,17 @@ O.splice.compare = function(ours, l, theirs, r) {
   return O.compare(O.splice.getValue(ours[l + 2]), O.splice.getValue(theirs[r + 2]))
 }
 
+/* # Transform SPLICE set against another SPLICE set
+Most of the time, splices just push each other changing the counters.
+Though they also can get into conflicting situations:
+1. Splice can completely remove another
+2. Splices can patch sequences starting at the same position
+3. Splices can patch intersecting sequences
+4. Splices can insert at the position
+
+To transform splice lists against each other in one pass, they need
+to be normalized first to simplify all intersecting ranges.
+*/
 O.splice.splice = function(ours, theirs, normalized, safe) {
   if (!normalized) {
     ours = O.splice.normalize(ours)

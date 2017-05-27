@@ -18,10 +18,10 @@ O.list.normalize = function(list) {
       simplified.push(list[i])
     else
       for (var j = simplified.length; j--;) {
-        var concatenated = O.concat(simplified[j], list[i]);
+        var concatenated = O(simplified[j], list[i], true);
         if (concatenated === undefined)  {
           simplified.splice(j, 1);
-        } else if (concatenated === simplified[j]) {
+        } else if (concatenated instanceof Array && concatenated[0] === simplified[j] && concatenated[1] === list[i]) {
           simplified.splice(j + 1, 0, list[i])
         } else {
           simplified[j] = concatenated
@@ -68,7 +68,7 @@ O.list.transform = function (ours, theirs, normalized, returnOurs) {
     else
       transformed.push(list[j])
   }
-  return transformed;
+  return O.normalize(transformed);
 }
 
 O.list.invert = function (ours, theirs) {

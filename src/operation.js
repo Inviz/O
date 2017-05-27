@@ -1,11 +1,38 @@
-var O = function(ours, theirs) {
+/*
+  O implements Operational Transformational
+  algorithm to work with json. Its commands
+  and patchsets are represented as json as well:
+  Any JSON can be seen as set of commands to create a
+  an object property by property.
+
+  At the first glance **O(ours, theirs)** accepts
+  current state as first argument as operation log
+  as the second, and outputs transformed object.
+  If we look deeper, generates a normalized combination
+  of our and their operations as if they happened sequentially.
+  This property is used to compress operation logs. 
+
+*/
+
+var O = function(ours, theirs, scoped) {
   if (arguments.length === 1)
     return O(undefined, ours);
   if (theirs === undefined)
     return ours;
   var type = O.typeof(theirs);
-  if (type)
-    return O[type](ours, theirs)
+  if (type === undefined) return ours;
+  switch (O.typeof(ours, !scoped)) {
+    case 'set': case 'merge':
+      return O[type](ours, theirs)
+    case type:
+      return O[type].concat(ours, theirs);
+    case 'list':
+      return ours.concat([theirs])
+    default:
+      if (type === 'list')
+        return [[ours]].concat(theirs);
+      return [ours, theirs];
+  }
 }
 this.O = O;
 
@@ -24,29 +51,17 @@ O.invert = function(ours, theirs) {
     return type.invert(ours, theirs)
 }
 
-// Combine two operations as if they were executed in order
-O.compose = function(ours, theirs) {
-  var oursType = O.typeof(ours);
-  var theirsType = O.typeof(theirs);
-  if (oursType === theirsType)
-    return O.concat(ours, theirs);
-  if (oursType === 'list')
-    return ours.concat([theirs])
-  if (theirsType === 'list')
-    return [[ours]].concat(theirs);
-  return [ours, theirs]
-}
-O.then = O.compose
+/*
+  Transform two operations as if they were executed simultaneously.
+  For example, if two operations were inserting text at different 
+  positions in document, the latter insertion position will be offset 
+  by number of characters inserted by former operation.
+  Rebase can produce transformed versions of both ours and theirs operations.
+  When transformed ours is composed on top of original theirs,
+  the document will be at the same state as if transformed theirs
+  applied after original ours. A + B' = B + A'
+*/
 
-
-// Transform two operations as if they were executed simultaneously.
-// For example, if two operations were inserting text at different 
-// positions in document, the latter insertion position will be offset 
-// by number of characters inserted by former operation.
-// Rebase can produce transformed versions of both ours and theirs operations.
-// When transformed ours is composed on top of original theirs,
-// the document will be at the same state as if transformed theirs
-// applied after original ours. A + B' = B + A'
 
 O.transform = function(ours, theirs, normalized) {
   if (theirs === undefined)
@@ -75,33 +90,20 @@ O.transform = function(ours, theirs, normalized) {
 
 O.with = O.transform;
 
-// Attempt to join two operations of the same type into one
-O.concat = function(ours, theirs) {
-  var oursType = O.typeof(ours);
-  var theirsType = O.typeof(theirs);
-  var method = O[oursType];
-  if (oursType === theirsType) {
-    return method.concat(ours, theirs)
-  } else {
-    var Object = O[typwe]
-  }
-}
 
 // Return type of operation used by AST node
-O.typeof = function(operation, nested) {
+O.typeof = function(operation, value) {
   if (operation != null && typeof operation == 'object') {
     if (operation instanceof Array)  {
       switch (typeof operation[0]) {
         case 'number': 
-          return 'splice';
+          return value ? 'set' : 'splice';
         case 'string':
-          return operation[0]
-        case 'object':
-          return 'list';
+          return value ? 'set' : operation[0]
         case 'undefined':
-          if (nested)
-            return 'set';
-          return 'list';
+          return value ? 'set' : 'list';
+        case 'object':
+          return operation[0] instanceof Array ? 'list' : 'set';
       }
     } else {
       return 'merge';

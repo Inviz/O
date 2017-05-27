@@ -10,31 +10,38 @@ describe('O.list', function() {
   })
 
   it ('should concat operations', function() {
-    expect(O.concat([['set', 'abc']], [['set', 'cde']])).toEqual([['set', 'abc'], ['set', 'cde']])
+    expect(O([['set', 'abc']], [['set', 'cde']])).toEqual([['set', 'abc'], ['set', 'cde']])
   })
 
   it ('should be used to compose operations', function() {
-    expect(O.compose(['set', 'abc'], ['splice', 'cde'])).toEqual([['set', 'abc'], ['splice', 'cde']])
+    expect(O([['set', 'abc']], [['splice', 'cde']])).toEqual([['set', 'abc'], ['splice', 'cde']])
+  })
+  it ('should be used to compose operations', function() {
+    expect(O([['set', 'abc']], [['splice', 'cde']])).toEqual([['set', 'abc'], ['splice', 'cde']])
   })
 
   it ('should normalize operations', function() {
-    expect(O.normalize([['set', 'abc'], ['set', 'cde']])).toEqual(['set', 'cde'])
+    expect(O.normalize([['set', 'abc'], ['set', 'cde']])).toEqual('cde')
+    expect(O.normalize([[2, 0, 'a'], [0, 0, 'b']])).toEqual([0, 0, 'b', 3, 0, 'a'])
   })
 
   describe('.transform', function() {
     it ('should transform list against single operation', function() {
       transform([['move', 4, 5, 0],  ['move', 5, 3, 9]],   [0, 3, 'George'],
                 [['move', 7, 5, 0],  ['move', 5, 6, 12]],  [6, 3, 'George'], 'Bob Woofs')
-      transform([['move', 0, 3, 9]],   [[0, 3, 'George']],
-                [['move', 0, 6, 12]],  [[6, 3, 'George']], 'Bob Woofs')
-      transform([['move', 0, 3, 9]],   [0, 3, 'George'],
-                [['move', 0, 6, 12]],  [6, 3, 'George'], 'Bob Woofs')
+      transform([['move', 0, 3, 9]], [[0, 3, 'George']],
+                ['move', 0, 6, 12],  [6, 3, 'George'], 'Bob Woofs')
+      transform([['move', 0, 3, 9]], [0, 3, 'George'],
+                ['move', 0, 6, 12],  [6, 3, 'George'], 'Bob Woofs')
 
       transform([[0, 0, 'a'], [2, 0, 'b']], [4, 0, 'c'],
-                [[0, 0, 'a'], [2, 0, 'b']], [6, 0, 'c'])
+                [0, 0, 'a', 2, 0, 'b'], [6, 0, 'c'])
 
       transform([[0, 0, 'a'], [2, 0, 'b']], [[4, 0, 'c']],
-                [[0, 0, 'a'], [2, 0, 'b']], [[6, 0, 'c']])
+                [0, 0, 'a', 2, 0, 'b'], [6, 0, 'c'])
+
+      transform([[2, 0, 'a'], [0, 0, 'b']], [[4, 0, 'c']],
+                [0, 0, 'b', 3, 0, 'a'], [6, 0, 'c'])
 
       transform(
         [[23,9,"11111"],[27,7,"77777"]],
@@ -48,7 +55,7 @@ describe('O.list', function() {
       )
       transform(
         [[18,8,""]], [[23,1,''],[10,4,''],[14,1,""]],
-        [[14,6,""]], [undefined,[10,4,""],undefined]
+        [14,6,""], [10,4,""]
       )
     })
     it ('should resolve random moves/splices (10000 fuzzy runs)', function() {
