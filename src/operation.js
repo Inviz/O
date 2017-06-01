@@ -3,14 +3,16 @@
   algorithm to work with json. Its commands
   and patchsets are represented as json as well:
   Any JSON can be seen as set of commands to create a
-  an object property by property.
+  that JSON object property by property.
 
   At the first glance **O(ours, theirs)** accepts
   current state as first argument as operation log
   as the second, and outputs transformed object.
-  If we look deeper, generates a normalized combination
+  If we look deeper, O generates a normalized combination
   of our and their operations as if they happened sequentially.
-  This property is used to compress operation logs. 
+  Our state does not have to be fully resolved:
+  We can have a set of operations on our side as well.
+  This property is used to compress operation logs
 
 */
 
@@ -131,11 +133,8 @@ O.compare = function(ours, theirs) {
   if (theirsType == 'object' && theirs instanceof Array)
     theirsType = 'array';
 
-  // Comparing strings to numbers, numbers to objects, etc.
-  // just sort based on the type name.
-  if (oursType != theirsType) {
+  if (oursType != theirsType)
     return O.compare(oursType, theirsType);
-  }
 
   switch (oursType) {
     case 'string':
@@ -149,20 +148,31 @@ O.compare = function(ours, theirs) {
       return 0;
 
     case 'array':
-      // First compare on length.
-      var x = O.compare(ours.length, theirs.length);
-      if (x != 0) return x;
-
-      // Same length, compare on values.
+      if (ours.length != theirs.length)
+        return ours.length > theirs.length ? 1 : -1 
       for (var i = 0; i < ours.length; i++) {
-        x = O.compare(ours[i], theirs[i]);
-        if (x != 0) return x;
+        var result = O.compare(ours[i], theirs[i]);
+        if (result !== 0) 
+          return result;
       }
 
       return 0;
 
     case 'object':
-      return JSON.stringify(ours).localeCompare(JSON.stringify(theirs));
+      for (var property of ours) {
+        if (property in theirs) {
+          var result = O.compare(theirs, property);
+          if (result !== 0) 
+            return result;
+        } else {
+          return 1;
+        }
+      }
+      for (var property in theirs)
+        if (!(property in ours))
+          return -1;
+
+      return 0;
 
   }
 }

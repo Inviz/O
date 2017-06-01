@@ -1,34 +1,5 @@
 describe('O.move', function() {
   
-  var letters = Array(226);
-  for (var i = 0; i < 226; i++)
-    letters[i] = String.fromCharCode('a'.charCodeAt(0) + i);
-  var alphabet = letters.join('')
-  function transform(left, right, leftE, rightE) {
-
-    var rightT = O.transform(left, right);
-    var leftT  = O.transform(right, left);
-
-    if (arguments.length > 2) {
-      expect(leftT).toEqual(leftE)
-      expect(rightT).toEqual(rightE)
-
-      expect(   O(O(alphabet, right), leftE))
-      .toEqual( O(O(alphabet, left), rightE))
-
-    }
-
-    // ensure that both transformed sides produce the same result
-    expect(   O(O(alphabet, right), leftT))
-    .toEqual( O(O(alphabet, left), rightT))
-  }
-
-  function invert(left, right, rightE) {
-    var rightT = O.invert(left, right);
-    if (rightE)
-      expect(rightT).toEqual(rightE)
-    expect(O(O(left, right), rightT)).toEqual(left)
-  }
   it('should move LTR', function() {
     expect(O.move('abcdefghi', ['move', 2, 2, 6])).toBe('abefcdghi')  
   })

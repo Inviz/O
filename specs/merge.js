@@ -22,6 +22,15 @@ describe('O.merge', function() {
     expect(output).toEqual({key: 'test', test: 'value'})
     expect(output).not.toBe(right)
   })
+  it ('should merge sparse arrays', function() {
+    var left = [1,2,3]
+    var right = {
+      1: [['+', 10]],
+      4: [['-', 7]]
+    };
+    var output = O.merge(left, right);
+    expect(output).toEqual([1,12,3, undefined, -7])
+  })
   it ('should merge arrays of strings', function() {
     var left = {
       keys: ['test']
@@ -43,12 +52,17 @@ describe('O.merge', function() {
       }]
     };
     var right = {
-      keys: [{0: {title: 'Thinker'}}],
-      things: {0: {title: 'Maker'}}
+      keys: {0: {title: 'Thinker'}},
+      things: {0: {title: 'Maker'}},
+      stuff: [{title: 'Grunt'}]
     };
     var output = O.merge(left, right);
     expect(left).toEqual({keys: [{name: 'Boris'}]})
-    expect(output).toEqual({keys: [{name: 'Boris', title: 'Thinker'}], things: [{title: 'Maker'}]})
+    expect(output).toEqual({
+      keys: [{name: 'Boris', title: 'Thinker'}], 
+      things: {0: {title: 'Maker'}},
+      stuff: [{title: 'Grunt'}]
+    })
     expect(output).not.toBe(right)
   })
 
@@ -104,7 +118,6 @@ describe('O.merge', function() {
         test: null
       }
     };
-    debugger
     expect(O(left, right)).toEqual({
       key: 'test', 
       person: {
@@ -115,4 +128,26 @@ describe('O.merge', function() {
       test: 'value'})
   })
 
+  var array = Array(30).join('x').split('x').map(function() {
+    return Math.floor(Math.random() * 20)
+  });
+  it ('should transform arrays against splice', function() {
+    transform({1: 1}, [0, 1, []],
+              {0: 1}, [0, 1, []], array)
+    transform({1: 1}, [1, 1, []],
+              undefined, [1, 1, []], array)
+    transform({1: 1}, [0, 2, []],
+              undefined, [0, 2, []], array)
+    transform({1: 1, 3: 3}, [0, 2, []],
+              {1: 3}, [0, 2, []], array)
+    transform({1: 1, 3: 3}, [0, 1, [0]],
+              {1: 1, 3: 3}, [0, 1, [0]], array)
+    transform({1: 1, 3: 3}, [0, 0, [0]],
+              {2: 1, 4: 3}, [0, 0, [0]], array)
+  })
+
+  it ('should transform arrays against splice', function() {
+    transform({1: 1, 5: 5, 11: 11, 19: 19}, ['move', 3, 7, 13],
+              {1: 1, 4: 11, 8: 5, 19: 19}, ['move', 3, 7, 13], array)
+  })
 })

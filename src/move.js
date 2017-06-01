@@ -11,6 +11,7 @@ O.move = function(ours, theirs) {
       ours.slice(theirs[3], theirs[1]),
       ours.slice(theirs[1] + theirs[2]));
 }
+O.move.index = 3;
 
 /*
   Any movement from right to left, can be seen

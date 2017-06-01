@@ -46,6 +46,7 @@ O.splice = function(ours, theirs, normalized) {
   }
   return result;
 }
+O.splice.index = 1;
 
 // Produce an optimal sorted set of non-empty 
 // spliced ranges without intersections
@@ -56,6 +57,7 @@ O.splice.normalize = function(ours, once) {
   if (result.length) 
     return result;
 }
+
 
 O.splice.concat = function(ours, theirs) {
   var result = ours.slice();
@@ -239,8 +241,10 @@ O.splice.typeof = function(ours, theirs) {
 
 
 O.splice.invert = function (ours, theirs, normalized) {
-  if (!normalized)
+  if (!normalized) 
     theirs = O.splice.normalize(theirs)
+  if (theirs === undefined)
+    return
   var inverse = Array(theirs.length);
   var diff = 0;
   for (var i = 0, j = theirs.length; i < j; i += 3) {
@@ -285,85 +289,85 @@ O.splice.splice = function(ours, theirs, normalized, safe) {
     return
 
   var result = [];
-  var shiftOurs = 0;
-  var shiftTheirs = 0;
-  var shiftTheirsLater = 0;
-  outside: for (var t = 0, o = 0, tt = theirs.length; t < tt; t += 3) {
+  var shiftO = 0;
+  var shiftT = 0;
+  var offsetT = 0;
+  theirs: for (var t = 0, o = 0, tt = theirs.length; t < tt; t += 3) {
     var index     = theirs[t];
     var removing  = theirs[t + 1];
     var insertion = theirs[t + 2];
     // apply our ranges coming before their range
-    for (; shiftTheirs + index >= shiftOurs + ours[o]; o += 3) {
-      var ourShift  = O.splice.getShift(ours, o)
-      var concurrent = shiftTheirs + index == shiftOurs + ours[o];
+    for (; shiftT + index >= shiftO + ours[o]; o += 3) {
+      var change  = O.splice.getShift(ours, o)
+      var concurrent = shiftT + index == shiftO + ours[o];
       // if ranges start at the same place, pick shorter one first
       if (concurrent) {
         if (O.splice.compare(ours, o, theirs, t) > 0) {
-          shiftTheirsLater += ourShift
+          offsetT += change
           break;
 
         // two identical insertion, one is ignored
         } else if (O.splice.compare(ours, o, theirs, t) == 0 && !ours[o + 1]) {
-          continue outside
+          continue theirs
         }
       }
-      var intersection = shiftOurs + ours[o] + ours[o + 1] - (shiftTheirs + theirs[t]);
+      var intersection = shiftO + ours[o] + ours[o + 1] - (shiftT + theirs[t]);
       if (intersection > 0) {
         // our range consumed by theirs
         if (intersection >= removing) {
-          if (shiftTheirs + index == shiftOurs + ours[o]) {
-            shiftTheirs += ourShift;
+          if (shiftT + index == shiftO + ours[o]) {
+            shiftT += change;
             o += 3;
           }
-          shiftTheirs -= O.splice.getShift(theirs, t);
-          continue outside;
+          shiftT -= O.splice.getShift(theirs, t);
+          continue theirs;
 
         // their range at the same position partially removes ours
         } else if (concurrent) {
-          removing += ourShift
+          removing += change
           continue
 
         // partial intersection
         } else {
           removing -= intersection;
-          shiftTheirs += intersection
+          shiftT += intersection
         }
       }
-      shiftTheirs += ourShift;
+      shiftT += change;
     }
 
     // look ahead for ours side ranges removed by theirs 
     if (removing)
-    for (; shiftTheirs + index + removing >= shiftOurs + ours[o]; o += 3) { 
-      var ourShift = O.splice.getShift(ours, o);
-      var intersection = shiftTheirs + index + removing - (shiftOurs + ours[o]);
+    for (; shiftT + index + removing >= shiftO + ours[o]; o += 3) { 
+      var change = O.splice.getShift(ours, o);
+      var intersection = shiftT + index + removing - (shiftO + ours[o]);
       if (intersection <= 0)
         break;
       // our range is consumed by theirs
       if (intersection >= ours[o + 1]) {
-        removing += ourShift;
-        shiftTheirsLater = 0;
+        removing += change;
+        offsetT = 0;
       // ranges start at the same position
-      } else if (shiftTheirs + index == shiftOurs + ours[o]) {
-        shiftTheirs += intersection - O.splice.getLength(theirs[t + 2])
-        shiftTheirsLater = 0;
-        continue outside;
+      } else if (shiftT + index == shiftO + ours[o]) {
+        shiftT += intersection - O.splice.getLength(theirs[t + 2])
+        offsetT = 0;
+        continue theirs;
       // ranges intersect partially
       } else {
-        shiftTheirsLater += intersection
+        offsetT += intersection
         removing -= intersection
         break;
       }
     }
 
     // apply their range, log transformed command
-    result.push(shiftTheirs + index, removing, insertion);
+    result.push(shiftT + index, removing, insertion);
 
-    shiftOurs += O.splice.getLength(theirs[t + 2]) - removing;
+    shiftO += O.splice.getLength(theirs[t + 2]) - removing;
 
-    if (shiftTheirsLater) {
-      shiftTheirs += shiftTheirsLater;
-      shiftTheirsLater = 0;
+    if (offsetT) {
+      shiftT += offsetT;
+      offsetT = 0;
     }
   }
   return result.length ? result : undefined;

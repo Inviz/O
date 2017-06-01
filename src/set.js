@@ -3,6 +3,7 @@ O.set = function(ours, theirs) {
     return O.set(undefined, ours);
   return O.set.getValue(theirs)
 }
+O.set.index = 0;
 
 O.set.getValue = function(value) {
   if (value && value instanceof Array && value.length === 2 && value[0] === 'set') 

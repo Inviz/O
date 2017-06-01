@@ -21,8 +21,19 @@ describe('O.list', function() {
   })
 
   it ('should normalize operations', function() {
-    expect(O.normalize([['set', 'abc'], ['set', 'cde']])).toEqual('cde')
+    expect(O.normalize([['set', 'abc'], ['set', 'cde']])).toEqual(['set', 'cde'])
     expect(O.normalize([[2, 0, 'a'], [0, 0, 'b']])).toEqual([0, 0, 'b', 3, 0, 'a'])
+  })
+  it ('should reorder operations during normalization', function() {
+    normalize([["move",10,5,23],[14,1,"0000"]], [[19,1,"0000"],["move",10,5,26]])
+    normalize([["move",23,4,32],["move",14,9,23],[17,9,"66666"],[3,2,""], ["move",10,5,23],["move",19,9,29],[14,1,"0000"]], null, true)
+    normalize([[0, 0, 'b'], ['move', 10, 20, 40]], 
+               [[0, 0, 'b'], ['move', 10, 20, 40]])
+    normalize([['move', 10, 20, 40], [0, 0, 'b']], 
+              [[0, 0, 'b'], ['move', 11, 20, 41]])
+    normalize([['move', 10, 20, 40], [0, 0, 'b'], ['move', 10, 20, 40]], 
+              [[0, 0, 'b'], ['move', 11, 20, 41], ['move', 10, 20, 40]])
+
   })
 
   describe('.transform', function() {
@@ -78,32 +89,18 @@ describe('O.list', function() {
               ])
             }
           }
+          // run invertion assertions
+          invert(alphabet, list)
           ops.push(list)
         }
-        transform(ops[0], ops[1])
+
+        // run algorithm twice for normalized & non-normalized lists and compare results
+        var raw = transform(ops[0], ops[1], undefined,undefined,undefined, true)
+        var normalized = transform(ops[0], ops[1])
+        expect(raw).toEqual(normalized)
       }
     })
+
   })
 
-  var letters = Array(376);
-  for (var i = 0; i < 376; i++)
-    letters[i] = String.fromCharCode('a'.charCodeAt(0) + i);
-  var alphabet = letters.join('')
-  function transform(left, right, leftE, rightE, input) {
-    if (!input) input = alphabet
-
-    var rightT = O.transform(left, right);
-    var leftT  = O.transform(right, left);
-
-    if (arguments.length > 2) {
-      expect(leftT).toEqual(leftE)
-      expect(rightT).toEqual(rightE)
-      expect(   O(O(input, right), leftE))
-      .toEqual( O(O(input, left), rightE))
-    }
-
-    // ensure that both transformed sides produce the same result
-    expect(   O(O(input, right), leftT))
-    .toEqual( O(O(input, left), rightT))
-  }
 })

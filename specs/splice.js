@@ -2,51 +2,6 @@ describe('O.splice', function() {
   it ('should splice strings', function() {
     expect(O.splice('abcdefg', [3, 2, 'lol'])).toEqual('abclolfg')
   })
-  var letters = Array(226);
-  for (var i = 0; i < 226; i++)
-    letters[i] = String.fromCharCode('a'.charCodeAt(0) + i);
-  var alphabet = letters.join('')
-  function normalize(left, right, ignoreResult) {
-    left = O.normalize(left)
-  
-    // ensure list is wellformed    
-    if (left)
-      for (var i = 3; i < left.length; i += 3)
-        if (left[i - 3] >= left[i]) {
-          expect(left[i]).toBeGreaterThan(left[i - 3])
-          throw 1;
-        }
-    
-    // check normalized result if provided
-    if (!ignoreResult) {
-      var prev = -1;
-      expect(left).toEqual(right);
-    }
-    
-    // validate result with simple logic
-    var i = 0;
-    expect(O(alphabet, left)).toEqual(O(alphabet, right))
-  }
-  function transform(left, right, leftE, rightE) {
-
-    var rightT = O.transform(left, right);
-    var leftT  = O.transform(right, left);
-
-    if (arguments.length > 2) {
-      expect(leftT).toEqual(leftE)
-      expect(rightT).toEqual(rightE)
-    }
-
-    // ensure that both transformed sides produce the same result
-    expect(   O(O(alphabet, right), leftT))
-    .toEqual( O(O(alphabet, left), rightT))
-  }
-  function invert(left, right, rightE) {
-    var rightT = O.invert(left, right);
-    if (rightE)
-      expect(rightT).toEqual(rightE)
-    expect(O(O(left, right), rightT)).toEqual(left)
-  }
   it ('should use custom operation strings', function() {
     expect(O.splice('abcdefg', [3, 2, [['set', 'lol'], ['set', 'zol']]])).toEqual('abczolfg')
   })
