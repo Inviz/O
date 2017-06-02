@@ -208,8 +208,10 @@ O.splice.value = function(ours, offset, length, theirs) {
 }
 
 O.splice.getValue = function(value) {
-  if (O.splice.typeof(value) === 'list')
+  if (O.splice.typeof(value) === 'list') {
+    debugger
     return O.list(value);
+  }
   return value
 }
 O.splice.getLength = function(value) {
@@ -253,7 +255,7 @@ O.splice.invert = function (ours, theirs, normalized) {
     var operation = theirs[i + 2];
     inverse[i] = diff + theirs[i]
     inverse[i + 1] = O.splice.getLength(theirs[i + 2])
-    inverse[i + 2] = O.invert(theirs[i + 2], ours.slice(inverse[i], inverse[i] + theirs[i + 1]))
+    inverse[i + 2] = O.invert(ours.slice(inverse[i], inverse[i] + theirs[i + 1]), theirs[i + 2], true)
     diff += O.splice.getShift(inverse, i)
   }
   return inverse

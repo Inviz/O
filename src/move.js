@@ -46,7 +46,7 @@ O.move.invert = function(ours, theirs) {
 }
 
 O.move.concat = function(ours, theirs) {
-  if (ours[2] == theirs[2] && ours[3] == theirs[1])
+  if (ours[2] == theirs[2] && ours[3] - ours[2]  == theirs[1])
     return ['move', ours[1], ours[2], theirs[3]]
   return [ours, theirs]
 }
@@ -160,10 +160,12 @@ Transformation may split a splice into two smaller splices if:
 3. Splice can remove sequence starting before target, shifting move left 
 
 Two cases when move just needs to be updated:
-1. Splice can remove sub-sequence within moved range
-2. Splice can contain move source range and target
-3. Splice can happen between source and target
-4. Splice can happen somewhere before in the document
+1. Splice can insert at beginning of source range
+2. Splice can insert at the target position
+3. Splice can remove sub-sequence within moved range
+4. Splice can contain move source range and target
+5. Splice can happen between source and target
+6. Splice can happen somewhere before in the document
 
 There's a possibility that move is discarded altogether:
 1. Splice can remove everything between source and target
@@ -187,8 +189,10 @@ O.move.splice = function(ours, theirs, normalized, returnOurs) {
   }
   if (count === 0 || ours[2] === 0 || from + count === to)
     return returnOurs ? undefined : theirs
-  if (!returnOurs) 
+  if (!returnOurs) {
     var splice  = [];
+    var nothing = theirs[2] != null && theirs[2] instanceof Array ? [] : '';
+  }
   var rtl = ours[1] > ours[3];
 
   for (var t = 0, tt = theirs.length; t < tt; t+= 3) {
@@ -196,21 +200,23 @@ O.move.splice = function(ours, theirs, normalized, returnOurs) {
     var removing = theirs[t + 1];
     var insertion = theirs[t + 2];
     var length = O.splice.getLength(insertion);
-
-    // both source and target positions are consumed by single splice
+    var m = from === index && removing === 0;
+    debugger
+    // Both source and target positions are consumed by single splice
     if (from >= index && from + count <= index + removing &&
        to >= index && to <= index + removing) {
       O.splice.push(splice, index, removing, insertion)
       count = 0
 
-    // splice happens within move source
-    } else if (from <= index && from + count >= index + removing) {
+    // Splice happens within move source
+    } else if ((from <= index && (from < index || removing)) && from + count >= index + removing) {
       O.splice.push(splice, to + (index - from) - count, removing, insertion)
       count += length - removing
 
-    // move source range is consumed
+
+    // Move source range is consumed
     } else if (from >= index && from + count <= index + removing) {
-      O.splice.push(splice, to - count, count, '')
+      O.splice.push(splice, to - count, count, nothing)
       O.splice.push(splice, index, removing - count, insertion)
       count = 0
 
@@ -219,7 +225,7 @@ O.move.splice = function(ours, theirs, normalized, returnOurs) {
       var left = from - index;
       var right = removing - left;
       O.splice.push(splice, index, left, insertion);
-      O.splice.push(splice, to - left - count + length, right, '');
+      O.splice.push(splice, to - left - count + length, right, nothing);
       from += right;
       count -= right;
 
@@ -231,17 +237,17 @@ O.move.splice = function(ours, theirs, normalized, returnOurs) {
       // Splice spans until target position so move doesnt happen
       var intersection = index + removing - to;
       if (index < to && intersection > 0) {
-        O.splice.push(splice, from, right - intersection, '');
-        O.splice.push(splice, to - (right - intersection), intersection,  '');
+        O.splice.push(splice, from, right - intersection, nothing);
+        O.splice.push(splice, to - (right - intersection), intersection,  nothing);
         O.splice.push(splice, index, left,  insertion);
         to = index
       } else {
         if (index + removing != to && !rtl) {
-          O.splice.push(splice, to - count + (index - from), left, '');
+          O.splice.push(splice, to - count + (index - from), left, nothing);
           O.splice.push(splice, index - (count - left), right,  insertion);
         } else {
           O.splice.push(splice, to - count + (index - from), left, insertion);
-          O.splice.push(splice, index - (count - left), right,  '');
+          O.splice.push(splice, index - (count - left), right,  nothing);
         }
         if (rtl) 
           count += length;
@@ -249,8 +255,6 @@ O.move.splice = function(ours, theirs, normalized, returnOurs) {
           to -= removing
       }
       count -= left 
-      
-    // Splice comes after MOVE source region, but before target
     } else if (index > from && index < to) {
 
       // Target position is within splice and gets shifted back
@@ -258,20 +262,33 @@ O.move.splice = function(ours, theirs, normalized, returnOurs) {
         var left = to - index;
         var right = removing - left;
         O.splice.push(splice, to, right,  insertion);
-        O.splice.push(splice, index - count, left, '');
+        O.splice.push(splice, index - count, left, nothing);
         to = index;
+
+      // Splice comes after MOVE source region, but before target
       } else {
         O.splice.push(splice, index - count, removing, insertion)
       }
+
+    // Splice inserts at target position
+    } else if (index === to && removing === 0) {
+      O.splice.push(splice, index - count, removing, insertion)
+
+    // Splice inserts at starting position
+    } else if (index === from && removing === 0) {
+      from += length - removing
+      to += length - removing
+      O.splice.push(splice, index, removing, insertion)
+      continue
 
     // Splice after target or before source is not affected by move
     } else {
       O.splice.push(splice, index, removing, insertion)
     }
+    if (index < to || (index === to && removing === 0))
+      to += length - removing
     if (index < from)
       from += length - removing
-    if (index < to)
-      to += length - removing
   }
   return returnOurs ? O.move.normalize(['move', from, count, to], rtl) : splice;
 }

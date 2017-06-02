@@ -12,7 +12,10 @@ O.set.getValue = function(value) {
 }
 
 O.set.invert = function(ours, theirs) {
-  return O.set.getValue(theirs);
+  if (theirs && theirs instanceof Array && theirs.length === 2 && theirs[0] === 'set') 
+    return ['set', O.set.getValue(ours)]
+  else
+    return O.set.getValue(ours)
 }
 
 O.set.concat = function (ours, theirs) {

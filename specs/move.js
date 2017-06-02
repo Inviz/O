@@ -230,7 +230,7 @@ describe('O.move', function() {
                 undefined, [ 0, 4, '1' ])
     })
     it ('should resolve against single splice (10000 fuzzy runs)', function() {
-      for (var runs = 0; runs < 100; runs++) {
+      for (var runs = 0; runs < 10000; runs++) {
         var op1 = ['move', 10 + Math.floor(Math.random() * 5), Math.floor(Math.random() * 5)]
         op1.push(Math.random() > 0.5 ? op1[1] + op1[2] + Math.floor(Math.random() * 5) : op1[1] - Math.floor(Math.random() * 5))
         var op2 = [];
@@ -241,15 +241,26 @@ describe('O.move', function() {
       }
     })
     it ('should resolve against single replacement (10000 fuzzy runs)', function() {
-      for (var runs = 0; runs < 100; runs++) {
+      for (var runs = 0; runs < 10000; runs++) {
         var op1 = ['move', 10 + Math.floor(Math.random() * 5), Math.floor(Math.random() * 5)]
         op1.push(Math.random() > 0.5 ? op1[2] + Math.floor(Math.random() * 5) : op1[1] - Math.floor(Math.random() * 5))
         var op2 = [];
         for (var i = 0, j = 1; i < j; i++) {
-          op2.push(10 + Math.floor(Math.random() * 3), Math.floor(Math.random() * 5) + 1, Array(Math.floor(Math.random() * 10)).join(Math.floor(Math.random() * 10)))
+          op2.push(10 + Math.floor(Math.random() * 3), Math.floor(Math.random() * 5), Array(Math.floor(Math.random() * 10)).join(Math.floor(Math.random() * 10)))
         }
         transform(op1, op2)
       }
+    })
+    it ('should resolve concurrent insertion at target', function() {
+
+      transform(["move",101,11,86], [86,0,"77"],
+                ["move",103,11,88], [86,0,"77"])
+
+      
+      transform(["move",71,11,86], [86,0,"77"],
+                ["move",71,11,88], [75,0,"77"])
+
+
     })
 
     it ('should resolve multiple splice cases caught by fuzzer', function() {

@@ -90,7 +90,6 @@ O['rot'].transform = function(ours, theirs, returnOurs) {
   // apply theirss in reverse lexicographical order 
   // ("+" comes earlier than '/' in ascii table)
   if (O.compare(ours, theirs) < 0) {
-    debugger
     return returnOurs ? ours : [O.invert(undefined, ours), theirs, ours];
   }
   return theirs

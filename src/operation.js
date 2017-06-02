@@ -47,8 +47,8 @@ O.normalize = function(ours, argument) {
 }
 
 // Produce operation that undoes the given one
-O.invert = function(ours, theirs) {
-  var type = O[O.typeof(theirs)];
+O.invert = function(ours, theirs, top) {
+  var type = O[O.typeof(theirs, top)];
   if (type.invert)
     return type.invert(ours, theirs)
 }

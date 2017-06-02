@@ -11,9 +11,8 @@ O.list.concat = function(left, right) {
 }
 
 /*
-  OT is rumored to be unpredictable.
-  However, this is only true when operation logs
-  are not normalized and compressed. 
+  OT is rumored to be unpredictable. It is only true 
+  if operation logs are not normalized and compressed. 
 
   What seems to be unpredictable can often be attributed
   to parts of operation logs which have been undone,
@@ -34,7 +33,11 @@ O.list.concat = function(left, right) {
   2. **splice** can be added into a normalized splice set with no intersections
   3. **merge** ops concatenate together naturally into a bigger object
   4. **move** can turn into no-op when splice bubbles up in the list
-
+  
+  Reordering of two operations involves transforming
+  left against inversed version of right. In this algorithm
+  only `merge` and `move` operations need to be inversed, and they
+  do not require current state for inversion, unlike inversion of splice 
 */
 O.list.normalize = function(ours) {
   var list;
@@ -43,6 +46,7 @@ O.list.normalize = function(ours) {
     if (o === undefined) 
       continue;
     var type = O.typeof(o);
+    // set operations restart log
     if (list === undefined || type === 'set') {
       list = [o]
       continue;
@@ -51,8 +55,10 @@ O.list.normalize = function(ours) {
     for (var j = list.length; j--;) {
       var other = O.typeof(list[j]);
       var l = list[j];
+      // reorder operations by rebasing right against inverse of left
       if (index < O[other].index) {
         var inverse = O.invert(undefined, l);
+        var old = o;
         o = O.transform(inverse, o)
         l = O.transform(o, l)
         if (l === undefined)
@@ -61,6 +67,7 @@ O.list.normalize = function(ours) {
           list[j] = l;
         if (j === 0)
           list.splice(j, 0, o);
+      // attempt to concatenate operations of the same type
       } else {
         var concatenated = O(l, o, true);
         if (concatenated === undefined)  {
