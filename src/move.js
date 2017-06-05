@@ -46,8 +46,8 @@ O.move.invert = function(ours, theirs) {
 }
 
 O.move.concat = function(ours, theirs) {
-  if (ours[2] == theirs[2] && ours[3] - ours[2]  == theirs[1])
-    return ['move', ours[1], ours[2], theirs[3]]
+ // if (ours[2] == theirs[2] && ours[3] - ours[2]  == theirs[1])
+ //   return ['move', ours[1], ours[2], theirs[3]]
   return [ours, theirs]
 }
 /* # Transform MOVE against MOVE
@@ -72,10 +72,8 @@ their side of the story.
 */
 O.move.move = function(ours, theirs, normalized) {
   var rtl = theirs[1] > theirs[3];
-  if (!normalized) {
-    theirs = O.move.normalize(theirs, false)
-    ours = O.move.normalize(ours, false)
-  }
+  theirs = O.move.normalize(theirs, false)
+  ours = O.move.normalize(ours, false)
   if (!theirs)
     return
   if (!ours)
@@ -142,6 +140,8 @@ O.move.move = function(ours, theirs, normalized) {
     move = oursFirst ? ['move', r[1] - l[2], r[2], r[3] - l[2]]
                      : l
   }
+  //if (move && move[0] === 'move')
+  //  return O.move.normalize(move, rtl)
   return move ? O.normalize(move) : O.move.normalize(theirs, rtl)
 }
 
@@ -176,6 +176,22 @@ the move is unaffected
 */
 
 O.move.splice = function(ours, theirs, normalized, returnOurs) {
+  if (normalized === 'untransform') {
+    if (theirs && theirs.length > 3) {
+      var list = [];
+      var o = ours;
+      for (var t = theirs.length; (t -= 3) >= 0;) {
+        var old = o;
+        if (o !== undefined) {
+          o = O.move.splice(o, [theirs[t], theirs[t + 1], theirs[t + 2]], true, true);
+          list.push(O.move.splice(old, [theirs[t], theirs[t + 1], theirs[t + 2]]))
+        } else {
+          list.push([theirs[t], theirs[t + 1], theirs[t + 2]])
+        }
+      }
+      return returnOurs ? o : list
+    }
+  }
   if (!normalized && theirs.length > 3)
     theirs = O.splice.normalize(theirs)
   if (ours[1] < ours[3]) {
@@ -194,38 +210,39 @@ O.move.splice = function(ours, theirs, normalized, returnOurs) {
     var nothing = theirs[2] != null && theirs[2] instanceof Array ? [] : '';
   }
   var rtl = ours[1] > ours[3];
+  if (normalized === false)
+    var quick = true;
 
-  for (var t = 0, tt = theirs.length; t < tt; t+= 3) {
+  theirs: for (var t = 0, tt = theirs.length; t < tt; t+= 3) {
     var index = theirs[t]
     var removing = theirs[t + 1];
     var insertion = theirs[t + 2];
     var length = O.splice.getLength(insertion);
     var m = from === index && removing === 0;
-    debugger
     // Both source and target positions are consumed by single splice
     if (from >= index && from + count <= index + removing &&
        to >= index && to <= index + removing) {
-      O.splice.push(splice, index, removing, insertion)
+      O.splice.push(splice, index, removing, insertion, quick)
       count = 0
 
     // Splice happens within move source
     } else if ((from <= index && (from < index || removing)) && from + count >= index + removing) {
-      O.splice.push(splice, to + (index - from) - count, removing, insertion)
+      O.splice.push(splice, to + (index - from) - count, removing, insertion, quick)
       count += length - removing
 
 
     // Move source range is consumed
     } else if (from >= index && from + count <= index + removing) {
-      O.splice.push(splice, to - count, count, nothing)
-      O.splice.push(splice, index, removing - count, insertion)
+      O.splice.push(splice, to - count, count, nothing, quick)
+      O.splice.push(splice, index, removing - count, insertion, quick)
       count = 0
 
     // Splice intersects with left boundary of moved range
     } else if (index < from && index + removing > from) {
       var left = from - index;
       var right = removing - left;
-      O.splice.push(splice, index, left, insertion);
-      O.splice.push(splice, to - left - count + length, right, nothing);
+      O.splice.push(splice, index, left, insertion, quick);
+      O.splice.push(splice, to - left - count + length, right, nothing, quick);
       from += right;
       count -= right;
 
@@ -237,17 +254,17 @@ O.move.splice = function(ours, theirs, normalized, returnOurs) {
       // Splice spans until target position so move doesnt happen
       var intersection = index + removing - to;
       if (index < to && intersection > 0) {
-        O.splice.push(splice, from, right - intersection, nothing);
-        O.splice.push(splice, to - (right - intersection), intersection,  nothing);
-        O.splice.push(splice, index, left,  insertion);
+        O.splice.push(splice, from, right - intersection, nothing, quick);
+        O.splice.push(splice, to - (right - intersection), intersection,  nothing, quick);
+        O.splice.push(splice, index, left,  insertion, quick);
         to = index
       } else {
         if (index + removing != to && !rtl) {
-          O.splice.push(splice, to - count + (index - from), left, nothing);
-          O.splice.push(splice, index - (count - left), right,  insertion);
+          O.splice.push(splice, to - count + (index - from), left, nothing, quick);
+          O.splice.push(splice, index - (count - left), right,  insertion, quick);
         } else {
-          O.splice.push(splice, to - count + (index - from), left, insertion);
-          O.splice.push(splice, index - (count - left), right,  nothing);
+          O.splice.push(splice, to - count + (index - from), left, insertion, quick);
+          O.splice.push(splice, index - (count - left), right,  nothing, quick);
         }
         if (rtl) 
           count += length;
@@ -261,34 +278,36 @@ O.move.splice = function(ours, theirs, normalized, returnOurs) {
       if (index < to && to < index + removing) {
         var left = to - index;
         var right = removing - left;
-        O.splice.push(splice, to, right,  insertion);
-        O.splice.push(splice, index - count, left, nothing);
+        O.splice.push(splice, to, right,  insertion, quick);
+        O.splice.push(splice, index - count, left, nothing, quick);
         to = index;
 
       // Splice comes after MOVE source region, but before target
       } else {
-        O.splice.push(splice, index - count, removing, insertion)
+        O.splice.push(splice, index - count, removing, insertion, quick)
       }
 
     // Splice inserts at target position
     } else if (index === to && removing === 0) {
-      O.splice.push(splice, index - count, removing, insertion)
+      O.splice.push(splice, index - count, removing, insertion, quick)
 
     // Splice inserts at starting position
     } else if (index === from && removing === 0) {
       from += length - removing
       to += length - removing
-      O.splice.push(splice, index, removing, insertion)
+      O.splice.push(splice, index, removing, insertion, quick)
       continue
 
     // Splice after target or before source is not affected by move
     } else {
-      O.splice.push(splice, index, removing, insertion)
+      O.splice.push(splice, index, removing, insertion, quick)
     }
     if (index < to || (index === to && removing === 0))
       to += length - removing
     if (index < from)
       from += length - removing
   }
+  if (splice && quick && splice.length == 1)
+    splice = splice[0]
   return returnOurs ? O.move.normalize(['move', from, count, to], rtl) : splice;
 }

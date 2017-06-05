@@ -26,7 +26,6 @@ describe('Examples', function() {
     /* Now they both can apply each others commands.
        They are guaranteed to have identical result
        retaining semantic intent of both peers as much as possible */
-       debugger
     var result1 = O(own1, O.transform(change1, change2));
     var result2 = O(own2, O.transform(change2, change1));
 

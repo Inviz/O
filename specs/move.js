@@ -248,7 +248,10 @@ describe('O.move', function() {
         for (var i = 0, j = 1; i < j; i++) {
           op2.push(10 + Math.floor(Math.random() * 3), Math.floor(Math.random() * 5), Array(Math.floor(Math.random() * 10)).join(Math.floor(Math.random() * 10)))
         }
-        transform(op1, op2)
+        var a = transform(O.move.normalize(op1, false), op2)
+        var b = transform(O.move.normalize(op1, true), op2)
+        //expect(a).toEqual(b)
+
       }
     })
     it ('should resolve concurrent insertion at target', function() {
@@ -256,7 +259,7 @@ describe('O.move', function() {
       transform(["move",101,11,86], [86,0,"77"],
                 ["move",103,11,88], [86,0,"77"])
 
-      
+
       transform(["move",71,11,86], [86,0,"77"],
                 ["move",71,11,88], [75,0,"77"])
 
@@ -332,7 +335,9 @@ describe('O.move', function() {
         for (var i = 0, j = 5; i < j; i++) {
           op2.push(10 + Math.floor(Math.random() * 10), Math.floor(Math.random() * 5) + 1, Array(Math.floor(Math.random() * 10)).join(Math.floor(Math.random() * 10)))
         }
-        transform(op1, op2)
+        var a = transform(O.move.normalize(op1, false), op2)
+        var b = transform(O.move.normalize(op1, true), op2)
+        //expect(a).toEqual(b)
       }
     })
   })

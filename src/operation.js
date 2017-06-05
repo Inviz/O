@@ -24,12 +24,12 @@ var O = function(ours, theirs, scoped) {
   var type = O.typeof(theirs);
   if (type === undefined) return ours;
   switch (O.typeof(ours, !scoped)) {
+    case 'list':
+      return ours.concat([theirs])
     case 'set': case 'merge':
       return O[type](ours, theirs)
     case type:
       return O[type].concat(ours, theirs);
-    case 'list':
-      return ours.concat([theirs])
     default:
       if (type === 'list')
         return [[ours]].concat(theirs);
@@ -46,11 +46,17 @@ O.normalize = function(ours, argument) {
   return ours;
 }
 
+O.compress = function(ours) {
+  return O.normalize(ours, 'compress')
+}
+
 // Produce operation that undoes the given one
 O.invert = function(ours, theirs, top) {
-  var type = O[O.typeof(theirs, top)];
-  if (type.invert)
-    return type.invert(ours, theirs)
+  if (theirs !== undefined) {
+    var type = O[O.typeof(theirs, top)];
+    if (type.invert)
+      return type.invert(ours, theirs)
+  }
 }
 
 /*
@@ -89,6 +95,7 @@ O.transform = function(ours, theirs, normalized) {
   if (O[theirsType].transform)
     return O[theirsType].transform(theirs, ours, normalized, true);
 }
+
 
 O.with = O.transform;
 

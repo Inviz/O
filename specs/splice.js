@@ -223,6 +223,7 @@ describe('O.splice', function() {
 
     })
     it ('should resolve concurrent removals', function() {
+      debugger
       transform([3, 9, ""],  [7, 2, "", 8, 5, ""],
                 [3, 5, ''],  [3, 3, ""])
       transform([0, 9, "", 9, 2, ""],  [0, 2, "", 5, 3, ""],
@@ -257,7 +258,11 @@ describe('O.splice', function() {
                 [2, 1, '2'],  [1, 0, '1'])
     })
     it ('should resolve concurrent replacements caught by fuzzer', function() {
-
+      debugger
+      transform([20, 6, "000", 44, 0, "44444", 75, 8, ""],
+                [10, 19, "99", 30, 19, "999"], 
+                [ 30, 0, '44444', 45, 8, ""],
+                [ 10, 16, '99', 35, 19, '999' ] )
 
       transform([0, 1, "", 4, 8, "1"],   [0, 1, "1111111", 12, 1, ""],
                 [0, 7, "", 4, 7, "1"],   undefined) // FIXME
@@ -317,7 +322,7 @@ describe('O.splice', function() {
   })
 
   describe('.invert', function() {
-    it ('should invert splices', function() {
+    it ('should invert splices s', function() {
       invert('abcdefghijklmnopqrst', [0, 3, "444444", 0, 1, "44444444"])
 
       invert(['a', 'b', 'c', 'd', 'e', 'f', 'g'], [0, 0, ['x', 'y'], 3, 1, []], [ 0, 2, [],1, 0, ['b']])

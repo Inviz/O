@@ -78,9 +78,14 @@ O.splice.concat = function(ours, theirs) {
   are sorted in order of appearance in document without any intersection.
   It is necessary for effective transformations.
 */
-O.splice.push = function(result, index, removing, insertion, feedback) {
+O.splice.push = function(result, index, removing, insertion, plain) {
   if (!result) 
     return;
+
+  if (plain) {
+    return result.push([index, removing, insertion])
+    
+  }
   
   var diff  = O.splice.getLength(insertion) - removing;
 
@@ -209,7 +214,6 @@ O.splice.value = function(ours, offset, length, theirs) {
 
 O.splice.getValue = function(value) {
   if (O.splice.typeof(value) === 'list') {
-    debugger
     return O.list(value);
   }
   return value
@@ -255,7 +259,7 @@ O.splice.invert = function (ours, theirs, normalized) {
     var operation = theirs[i + 2];
     inverse[i] = diff + theirs[i]
     inverse[i + 1] = O.splice.getLength(theirs[i + 2])
-    inverse[i + 2] = O.invert(ours.slice(inverse[i], inverse[i] + theirs[i + 1]), theirs[i + 2], true)
+    inverse[i + 2] = O.invert(ours.slice(inverse[i], inverse[i] + theirs[i + 1]), theirs[i + 2], true, true)
     diff += O.splice.getShift(inverse, i)
   }
   return inverse
@@ -305,7 +309,7 @@ O.splice.splice = function(ours, theirs, normalized, safe) {
       // if ranges start at the same place, pick shorter one first
       if (concurrent) {
         if (O.splice.compare(ours, o, theirs, t) > 0) {
-          offsetT += change
+          //offsetT += change
           break;
 
         // two identical insertion, one is ignored
@@ -345,7 +349,7 @@ O.splice.splice = function(ours, theirs, normalized, safe) {
       var intersection = shiftT + index + removing - (shiftO + ours[o]);
       if (intersection <= 0)
         break;
-      // our range is consumed by theirs
+      // their range is consumed by ours
       if (intersection >= ours[o + 1]) {
         removing += change;
         offsetT = 0;

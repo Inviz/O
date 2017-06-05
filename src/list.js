@@ -39,13 +39,18 @@ O.list.concat = function(left, right) {
   only `merge` and `move` operations need to be inversed, and they
   do not require current state for inversion, unlike inversion of splice 
 */
-O.list.normalize = function(ours) {
+O.list.normalize = function(ours, compress) {
   var list;
   for (var i = 0; i < ours.length; i++) {
     var o = ours[i];
     if (o === undefined) 
       continue;
+
     var type = O.typeof(o);
+    if (type === 'move') {
+      if (O.normalize(o) === undefined)
+        continue;
+    }
     // set operations restart log
     if (list === undefined || type === 'set') {
       list = [o]
@@ -56,11 +61,31 @@ O.list.normalize = function(ours) {
       var other = O.typeof(list[j]);
       var l = list[j];
       // reorder operations by rebasing right against inverse of left
-      if (index < O[other].index) {
-        var inverse = O.invert(undefined, l);
+      if (index < O[other].index && compress === 'compress') {
         var old = o;
-        o = O.transform(inverse, o)
-        l = O.transform(o, l)
+        //if (O.typeof(o) == 'splice' && o.length > 3) {
+        //  var ops = []
+        //  for (var k = 0; k < o.length; k += 3) {
+        //    ops.push(o.slice(k, k + 3))
+        //  }
+        //  o = ops;
+        //}
+        if (O.typeof(o) == 'splice' && o.length > 3) {
+          var ops = []
+          for (var k = 0; k < o.length; k += 3) {
+            var op = o.slice(k, k + 3)
+            op = O.transform(O.invert(undefined, l), op, 'untransform')
+            if (op !== undefined) {
+              l = O.transform(op, l)
+              //O.splice.push(ops, op[0], op[1], op[2])
+              ops.push(op)
+            }
+          }
+          o = ops;
+        } else {
+          o = O.transform(O.invert(undefined, l), o)
+          l = O.transform(o, l)
+        }
         if (l === undefined)
           list.splice(j, 1)
         else
@@ -107,7 +132,7 @@ O.list.transform = function (ours, theirs, normalized, returnOurs) {
     } else {
       var list = theirs;
       for (var i = 0; i < ours.length; i++) 
-        list = O.transform(ours[i], list);
+        list = O.transform(ours[i], list, normalized);
       return list;
     }
   }
@@ -118,11 +143,13 @@ O.list.transform = function (ours, theirs, normalized, returnOurs) {
     var o = ours[i];
     for (var j = 0; j < list.length; j++) {
       var listed = list[j]
-      list[j] = O.transform(o, list[j])
-      o = O.transform(listed, o)
+
+      list[j] = O.transform(o, list[j], normalized)
+      o = O.transform(listed, o, normalized)
     }
   }
 
+  //return list;
   return O.list.normalize(list);
 }
 
