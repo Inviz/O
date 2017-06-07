@@ -1,7 +1,7 @@
 
 var letters = Array(376);
 for (var i = 0; i < 376; i++)
-  letters[i] = String.fromCharCode('a'.charCodeAt(0) + i);
+  letters[i] = String.fromCharCode('a'.charCodeAt(0) + i % 27);
 var alphabet = letters.join('')
 function transform(left, right, leftE, rightE, input, normalized) {
   if (!input) input = alphabet
@@ -30,7 +30,7 @@ function transform(left, right, leftE, rightE, input, normalized) {
       )
     )
   //  test ip2 of move-splice pair (transform against pair of do-undo)
-    var tested = O.transform([left, O.invert(input, left)], right, false);
+    var tested = O.transform([left, O.invert(input, left)], right, 'untransform');
     expect(O.normalize(tested)).toEqual(O.normalize(right))
   }
 
@@ -63,7 +63,7 @@ function invert(left, right, rightE) {
   //  IP2: Allow do/undo pairs
   if (O.typeof(right) == 'move') {
     var test = [0, 3, 'd', 5, 8, '', 19, 3, 'zz']
-    var tested = O.transform([right, rightT], test, false);
+    var tested = O.transform([right, rightT], test, 'untransform');
   // 
     expect(O.normalize(tested)).toEqual(test)
   }
@@ -118,6 +118,7 @@ function normalize(left, right, ignoreResult, input) {
   } else {
     expect(O(input, normalized)).toEqual(O(input, left))
   }
+  return O(input, left)
   
 }
 
@@ -142,5 +143,6 @@ function compress(left, right, ignoreResult, input) {
   } else {
     expect(O(input, normalized)).toEqual(O(input, left))
   }
+  return O(input, left)
   
 }

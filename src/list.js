@@ -41,6 +41,7 @@ O.list.concat = function(left, right) {
 */
 O.list.normalize = function(ours, compress) {
   var list;
+
   for (var i = 0; i < ours.length; i++) {
     var o = ours[i];
     if (o === undefined) 
@@ -50,6 +51,11 @@ O.list.normalize = function(ours, compress) {
     if (type === 'move') {
       if (O.normalize(o) === undefined)
         continue;
+    }
+    if (type === 'list') {
+      ours = ours.slice(0, i).concat([O.list.normalize(o)], ours.slice(i + 1))
+      var o = ours[i];
+      var type = O.typeof(o);
     }
     // set operations restart log
     if (list === undefined || type === 'set') {
@@ -62,30 +68,9 @@ O.list.normalize = function(ours, compress) {
       var l = list[j];
       // reorder operations by rebasing right against inverse of left
       if (index < O[other].index && compress === 'compress') {
-        var old = o;
-        //if (O.typeof(o) == 'splice' && o.length > 3) {
-        //  var ops = []
-        //  for (var k = 0; k < o.length; k += 3) {
-        //    ops.push(o.slice(k, k + 3))
-        //  }
-        //  o = ops;
-        //}
-        if (O.typeof(o) == 'splice' && o.length > 3) {
-          var ops = []
-          for (var k = 0; k < o.length; k += 3) {
-            var op = o.slice(k, k + 3)
-            op = O.transform(O.invert(undefined, l), op, 'untransform')
-            if (op !== undefined) {
-              l = O.transform(op, l)
-              //O.splice.push(ops, op[0], op[1], op[2])
-              ops.push(op)
-            }
-          }
-          o = ops;
-        } else {
-          o = O.transform(O.invert(undefined, l), o)
-          l = O.transform(o, l)
-        }
+        o = O.transform(O.invert(undefined, l), o, 'untransform')
+        l = O.transform(o, l)
+        o = O.normalize(o);
         if (l === undefined)
           list.splice(j, 1)
         else
@@ -113,14 +98,27 @@ O.list.normalize = function(ours, compress) {
   return list;
 }
 
+O.list.flatten = function(list) {
 
-/*
+  for (var i = 0; i < list.length; i++) {
+    if (O.typeof(list[i]) == 'list') {
+      list = list.slice(0, i).concat(list[i], list.slice(i + 1))
+      i--;
+      continue;
+    }
+  }
+  return list;
+
+
+}
+/* 
   List transformation is one of the core concepts of OT,
   but it actually is pretty simple. Their ops transform 
   against each of ours in order. If their op is a list,
   our operations need to be transformed on each step as well.
 */
 O.list.transform = function (ours, theirs, normalized, returnOurs) {
+  if (theirs === undefined) return ours
   if (O.typeof(theirs) != 'list') {
     // Reorder arguments to return our side after transformation
     if (returnOurs) {
@@ -136,7 +134,6 @@ O.list.transform = function (ours, theirs, normalized, returnOurs) {
       return list;
     }
   }
-
   // Transform each of our ops against each of theirs 2-ways
   var list = theirs.slice();
   for (var i = 0; i < ours.length; i++) {

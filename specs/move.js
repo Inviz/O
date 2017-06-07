@@ -137,6 +137,8 @@ describe('O.move', function() {
     it ('should transform LTR moves that intersect with splices at start', function() {
       transform(['move', 11, 7, 19], [9, 3, 'X'],
                 ['move', 10, 6, 17], [9, 2, 'X', 11, 1, '' ])
+      transform(['move', 11, 7, 28], [10, 3, 'X'],
+                ['move', 11, 5, 26], [10, 1, 'X', 21, 2, '' ])
       transform(['move', 11, 7, 19], [9, 3, 'XXX'],
                 ['move', 12, 6, 19], [9, 2, 'XXX', 13, 1, '' ])
       transform(['move', 11, 7, 19], [9, 3, 'XXXXXX'],
@@ -145,16 +147,18 @@ describe('O.move', function() {
                 ['move', 9, 6, 16],  [9, 2, '', 10, 1, '' ])
     })
     it ('should transform RTL moves that intersect with splices at start', function() {
+      transform(['move', 11, 7, 0], [10, 3, 'XXX'],
+                ['move', 10, 8, 0],  [0, 2, 'XXX', 18, 1, '' ])
       transform(['move', 11, 7, 0], [9, 3, ''],
                 ['move', 9, 6, 0],  [0, 1, '', 15, 2, '' ])
+      transform(['move', 11, 7, 0], [9, 3, 'XXX'],
+                ['move', 9, 9, 0],  [0, 1, 'XXX', 18, 2, '' ])
       transform(['move', 11, 7, 0], [10, 3, ''],
                 ['move', 10, 5, 0], [0, 2, '', 15, 1, '' ])
-      transform(['move', 11, 7, 0], [9, 3, 'XXX'],
-                ['move', 12, 6, 0], [0, 1, '', 15, 2, 'XXX' ])
       transform(['move', 11, 7, 0], [10, 3, 'XXXXXX'],
-                ['move', 16, 5, 0], [0, 2, '', 15, 1, 'XXXXXX' ])
+                ['move', 10, 11, 0], [0, 2, 'XXXXXX', 21, 1, '' ])
       transform(['move', 11, 7, 0], [10, 3, 'XXXXXXX'],
-                ['move', 17, 5, 0], [0, 2, '', 15, 1, 'XXXXXXX' ])
+                ['move', 10, 12, 0], [0, 2, 'XXXXXXX', 22, 1, '' ])
     })
     it ('should transform LTR moves that intersect with splices at end', function() {
       transform(['move', 11, 7, 29], [16, 3, ''],
@@ -185,6 +189,38 @@ describe('O.move', function() {
     })
 
     it ('should resolve cases caught by fuzzer', function() {
+
+      var l = [[59,4,"66666"]]
+      var r = [["move",44,15,61],[61,2,"0000000"]]
+
+      var rr = O.compress(r, [[61,2,"0000000"], ["move",44,15,61]]);
+      debugger
+      var b = transform(l, rr);
+      var a = transform(l, r)
+      expect(a).toEqual(b)
+
+      var l = [["move",23,17,48]]
+      var r = [["move",35,8,49],[28,11,"7777777"]]
+
+      var rr = O.compress(r);
+      var b = transform(l, rr,
+        ["move",23,5,36],    [ [ [ 26, 4, '7777777', 39, 7, '' ] ], [ 'move', 23, 3, 45 ], [ 'move', 36, 5, 42 ] ]);
+      var a = transform(l, r, 
+          ["move",23,5,36], [[ 'move', 23, 3, 49 ], [ 'move', 40, 5, 46 ], [ 23, 4, '7777777', 36, 7, '' ]])
+      expect(a).toEqual(b)
+
+      transform(["move",11,4,19], [10,3,"77777777"])
+
+      var a = transform(
+        ["move", 7, 6, 17], [12, 4, "66"],
+        [ 'move', 7, 5, 15 ], [ 7, 3, '66', 15, 1, '' ]  )
+      var b = transform(["move", 13, 4, 7], [12, 4, "66"], 
+         [ 'move', 12, 3, 7 ], [ 7, 3, '66', 15, 1, '' ])
+      expect(a).toEqual(b)
+      
+
+
+
       transform(["move", 11, 3, 14], [12, 2, "444444"],  
                 undefined, [12, 2, "444444"])
 
@@ -241,7 +277,7 @@ describe('O.move', function() {
       }
     })
     it ('should resolve against single replacement (10000 fuzzy runs)', function() {
-      for (var runs = 0; runs < 10000; runs++) {
+      for (var runs = 0; runs < 1000; runs++) {
         var op1 = ['move', 10 + Math.floor(Math.random() * 5), Math.floor(Math.random() * 5)]
         op1.push(Math.random() > 0.5 ? op1[2] + Math.floor(Math.random() * 5) : op1[1] - Math.floor(Math.random() * 5))
         var op2 = [];
@@ -250,7 +286,7 @@ describe('O.move', function() {
         }
         var a = transform(O.move.normalize(op1, false), op2)
         var b = transform(O.move.normalize(op1, true), op2)
-        //expect(a).toEqual(b)
+        expect(a).toEqual(b)
 
       }
     })
@@ -337,7 +373,7 @@ describe('O.move', function() {
         }
         var a = transform(O.move.normalize(op1, false), op2)
         var b = transform(O.move.normalize(op1, true), op2)
-        //expect(a).toEqual(b)
+        expect(a).toEqual(b)
       }
     })
   })

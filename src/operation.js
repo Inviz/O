@@ -97,6 +97,14 @@ O.transform = function(ours, theirs, normalized) {
 }
 
 
+O.exclude = function(left, right) {
+  return O.transform(left, right, 'untransform');
+}
+
+O.include = function(left, right) {
+  return O.transform(left, right);
+}
+
 O.with = O.transform;
 
 

@@ -25,6 +25,11 @@ describe('O.list', function() {
     expect(O.normalize([[2, 0, 'a'], [0, 0, 'b']])).toEqual([0, 0, 'b', 3, 0, 'a'])
   })
   it ('should reorder operations during normalization', function() {
+    var compressed = compress(O.normalize([["move",68,7,84],["move",55,15,72],[64,15,"9"],[73,18,""]]), 
+                          [ [62, 8, "", 67, 2, "", 69, 5, "9", 73, 18, ""], [ 'move', 62, 5, 70 ], [ 'move', 55, 7, 64 ] ] )
+    var normalized =normalize([["move",68,7,84],["move",55,15,72],[64,15,"9"],[73,18,""]], null, true)
+    expect(compressed).toEqual(normalized)
+
     transform([["move",8,10,23]],    [8,0,"5555"],
                  [ 'move', 12, 10, 27  ],  [ 8, 0, '5555' ] )
 
@@ -59,16 +64,22 @@ describe('O.list', function() {
       expect(O.transform(["move",20,5,33], [[20, 5, '666666'], [34, 9, '']], true)).toEqual(
         O.transform(["move",20,5,33], [20, 5, '666666', 34, 9, ''], true)
       )
+      expect(O.transform([["move",20,5,33]], [[[20, 5, '666666']], [[34, 9, '']]], true)).toEqual(
+        O.transform(["move",20,5,33], [20, 5, '666666', 34, 9, ''], true)
+      )
+      expect(O.normalize([[["move",20,5,33], ["move",20,1,33]], [[[20, 5, '666666']], [[34, 9, '']]]])).toEqual(
+        [["move",20,5,33], ["move",20,1,33], [20, 5, '666666', 34, 9, '']]
+      )
     })
 
     it ('should transform list against single operation', function() {
 
 
-      normalize([["move",20,13,38], [ 20, 5, '666666', 34, 9, '' ]],    [ [ 28, 14, '666666' ], [ 'move', 20, 8, 34 ] ] )
+      compress([["move",20,13,38], [ 20, 5, '666666', 34, 9, '' ]],    [ [ 28, 14, '666666' ], [ 'move', 20, 8, 34 ]  ] )
       
-      normalize([["move",20,13,38], [33, 9, '' ], [20, 5, '666666']],  [ [ 28, 14, '666666' ], [ 'move', 20, 8, 34 ] ] )
+      compress([["move",20,13,38], [33, 9, '' ], [20, 5, '666666']],  [ [ 28, 14, '666666' ], [ 'move', 20, 8, 34 ] ] )
 
-      normalize([["move",20,13,38], [20, 5, '666666'], [34, 9, '']],  [ [ 28, 14, '666666' ], [ 'move', 20, 8, 34 ] ] )
+      compress([["move",20,13,38], [20, 5, '666666'], [34, 9, '']],  [ [ 28, 14, '666666' ], [ 'move', 20, 8, 34 ] ] )
 
       transform([ [20, 5, '666666'], [34, 9, ''] ],  ["move",20,5,38], 
                 [ 28, 14, '666666' ] , [ 'move', 20, 6, 34 ]  , alphabet.slice(70, 120), 'untransform')
@@ -92,7 +103,7 @@ describe('O.list', function() {
       
       transform([["move",28,7,42],[28,0,"4444"]], [[12,6,""]])
       transform([["move",71,11,86],[75,0,"77"]], ["move",51,5,61], 
-                [ [ 86, 0, '77' ], [ 'move', 71, 11, 88 ] ], [ 'move', 51, 5, 61 ] )
+                [ [ 'move', 71, 11, 86 ], [ 75, 0, '77' ] ], [ 'move', 51, 5, 61 ] )
       transform([["move",26,4,31],["move",34,12,51]], [31,11,""])
       transform([['move', 4, 5, 0],  ['move', 5, 3, 9]],   [0, 3, 'George'],
                 [['move', 7, 5, 0],  ['move', 5, 6, 12]],  [6, 3, 'George'], 'Bob Woofs')
@@ -165,7 +176,7 @@ describe('O.list', function() {
         letters[i] = String.fromCharCode('a'.charCodeAt(0) + i);
       var alphabet = letters.join('')
 
-      for (var c = 0; c < 10000; c++) {
+      for (var c = 0; c < 1000; c++) {
         var ops = [];
         for (var i = 0; i < 2; i++) {
           var list = [];
@@ -190,18 +201,21 @@ describe('O.list', function() {
           }
           // run invertion assertions
           invert(alphabet, list)
+          compress(list, null, true)
           ops.push(list)
         }
 
         // run algorithm twice for normalized & non-normalized lists and compare results
-        var raw = transform(O.normalize(ops[0]), O.normalize(ops[1]))
-        var normalized = transform(O.compress(O.normalize(ops[0])), O.compress(O.normalize(ops[1])))
+        var raw = transform(ops[0], ops[1])
+        var normalized = transform(O.compress(ops[0]), O.compress(ops[1]))
+        //if (raw !== normalized)
+        //  debugger
         expect(raw).toEqual(normalized)
       }
     })
 
 
-    xit ('should resolve random moves/splices (10000 fuzzy runs) against arrays', function() {
+    it ('should resolve random moves/splices (10000 fuzzy runs) against arrays', function() {
       for (var c = 0; c < 1000; c++) {
         var ops = [];
         for (var i = 0; i < 2; i++) {
@@ -227,9 +241,9 @@ describe('O.list', function() {
         }
 
         // run algorithm twice for normalized & non-normalized lists and compare results
-        var raw = transform(ops[0], ops[1], undefined,undefined,letters, true)
-        var normalized = transform(ops[0], ops[1], undefined, undefined, letters)
-        expect(raw).toEqual(normalized)
+        var raw = transform(ops[0], ops[1], undefined,undefined,letters)
+        //var normalized = transform(ops[0], ops[1], undefined, undefined, letters)
+        //expect(raw).toEqual(normalized)
       }
     })
 
