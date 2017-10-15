@@ -435,8 +435,8 @@ O.splice.splice = function(ours, theirs, normalized, safe) {
             if (insertion || before) 
               result.push(index + changeT + shiftT - truncateT, before, insertion);
             index += O.splice.getLength(insertion)
-            index += before + middle
-            truncateT += before + middle
+            index += before + middle -O.splice.getLength(oInsertion)
+            truncateT += before + middle - O.splice.getLength(oInsertion)
             insertion = ''
           }
 
@@ -471,7 +471,7 @@ O.splice.splice = function(ours, theirs, normalized, safe) {
           } else {
             if (insertion)
               result.push(oIndex + changeT + shiftT - truncateT, 0, insertion)
-            shiftT += O.splice.getLength(oInsertion)
+            shiftT += O.splice.getLength(insertion)
             insertion = '';
             debugger
             if (!removing) {
