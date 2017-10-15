@@ -320,11 +320,12 @@ describe('O.splice', function() {
 
       it ('simple test - multicharacter edits', function() {
 
+        transform([0, 2, '111'],  [1, 1, '222'],
+                  [0, 1, '111'],  [3,0,'222'])
+
         transform([0, 2, '222'],  [1, 1, '111'],
                   [0, 1, '', 3, 0, '222'],  [0,0,'111'])
 
-        transform([0, 2, '111'],  [1, 1, '222'],
-                  [0, 1, '111'],  [3,0,'222'])
 
         transform([0, 2, ''],  [1, 1, '222'],
                   [0, 1, ''],  [0, 0, '222'])
@@ -367,9 +368,14 @@ describe('O.splice', function() {
 
     })
     it ('should resolve concurrent removals', function() {
+
       debugger
       transform([3, 9, ""],  [7, 2, "", 8, 5, ""],
                 [3, 5, ''],  [3, 3, ""])
+
+      
+      transform([1, 4, "", 4, 2, ""],  [3, 7, "", 9, 1, ""],
+                [1, 2, ""],  [1, 3, '', 7, 1, ''])
 
       
       transform([3, 9, ""],  [10, 5, ""],
@@ -381,9 +387,6 @@ describe('O.splice', function() {
                 [3, 7, ''],  undefined)
 
 
-
-      transform([1, 4, "", 4, 2, ""],  [3, 7, "", 9, 1, ""],
-                [1, 2, ""],  [1, 3, '', 7, 1, ''])
 
     })
     it ('should resolve concurrent insertions', function() {
@@ -495,12 +498,12 @@ describe('O.splice', function() {
     })
     it ('should handle concurrent multicharacter replacements', function() {
       debugger
+      transform([1, 2, '111'],  [2, 2, '222'],
+                [1, 1, '111'],  [4, 1, '222'])
       transform([1, 2, '111'],  [1, 1, '222'],
                 [1, 0, '111', 7, 1, ''],  [ 4, 0, '222' ])
       transform([1, 1, '111'],  [1, 2, '222'],
                 [1, 0, '111'],  [4, 1, '222'])
-      transform([1, 2, '111'],  [2, 2, '222'],
-                [1, 1, '111'],  [4, 1, '222'])
       transform([1, 1, '111'],  [1, 1, '222'],
                 [1, 0, '111'],  [4, 0, '222'])
       transform([1, 1, '111'],  [1, 0, '222'],

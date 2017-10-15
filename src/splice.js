@@ -398,14 +398,19 @@ O.splice.splice = function(ours, theirs, normalized, safe) {
   var result = [];
   var shiftL = 0;
   var shiftT = 0;
+  var truncateT = 0;
+  var shiftO = 0;
+  var changeT = 0;
+  var changeO = 0;
 
   theirs: for (var t = 0, o = 0, tt = theirs.length; t < tt; t += 3) {
-    var index = theirs[t]
+    var index = theirs[t] - changeT
     var removing = theirs[t + 1];
     var insertion = theirs[t + 2];
+    truncateT = 0;
 
     for (;ours.length != o; o+= 3) {
-      var oIndex = ours[o];
+      var oIndex = ours[o] - changeO
       var oRemoving = ours[o + 1]
       var oInsertion = ours[o + 2]
       if (index <= oIndex) {
@@ -414,20 +419,27 @@ O.splice.splice = function(ours, theirs, normalized, safe) {
           var before = removing - (index + removing - oIndex)
           var end = index + removing - oIndex - oRemoving
           var after = Math.max(0, end)
-          shiftL += removing - before - after;
-          removing = after;
+          var middle = removing - before - after
+          shiftL += middle; // account for intersection
+          removing = after; // shrink their range
+
+          // our insertion comes first
           if (insertion && oInsertion && O.splice.compare(ours, o, theirs, t) < 0) {
-            if (before) {
-              result.push(index, before, '');
-            }
-          if (end < 0)
-            index += O.splice.getLength(oInsertion)
+            if (before)
+              result.push(index + changeT + shiftT - truncateT, before, '');
+            if (end < 0)
+              index += O.splice.getLength(oInsertion)
+
+          // their insertion comes first
           } else {
-            if (insertion || before)
-            result.push(index, before, insertion);
+            if (insertion || before) 
+              result.push(index + changeT + shiftT - truncateT, before, insertion);
             index += O.splice.getLength(insertion)
+            index += before + middle
+            truncateT += before + middle
             insertion = ''
           }
+
           if (end < 0)
             break
         // our range comes after theirs
@@ -439,10 +451,11 @@ O.splice.splice = function(ours, theirs, normalized, safe) {
         // our range consumes theirs
         if (index + removing <= oIndex + oRemoving) {
           if (insertion && oInsertion && O.splice.compare(ours, o, theirs, t) < 0) {
-            index = ours[o] + O.splice.getLength(oInsertion);
+            index = oIndex + O.splice.getLength(oInsertion);
           } else {
-            index = ours[o]
+            index = oIndex
           }
+          shiftL += removing
           removing = 0;
           break;
         // our range intersects their at the end
@@ -450,27 +463,40 @@ O.splice.splice = function(ours, theirs, normalized, safe) {
                   index == oIndex + oRemoving && insertion && oInsertion && O.splice.compare(ours, o, theirs, t) > 0) {
           var intersection = oIndex + oRemoving - index
           removing -= intersection
+          // our range comes first
           if (insertion && oInsertion && O.splice.compare(ours, o, theirs, t) < 0) {
             //result.push(index, removing - intersection, insertion)
+          
+          // their range comes first
           } else {
             if (insertion)
-              result.push(oIndex, 0, insertion)
+              result.push(oIndex + changeT + shiftT - truncateT, 0, insertion)
             shiftT += O.splice.getLength(oInsertion)
-            index = oIndex + O.splice.getLength(insertion)
             insertion = '';
+            debugger
+            if (!removing) {
+
+              break
+            } else {
+              debugger
+            }
           }
-          break
+          index += intersection
+          shiftT += intersection
+          truncateT += intersection
         } else if (index > ours[o]) {
           //shiftT += O.splice.getShift(ours, o)
         }
       }
       shiftT += O.splice.getShift(ours, o) + shiftL
       shiftL = 0;
+      changeO += O.splice.getShift(ours, o);
     }
 
     if (removing || insertion)
-      result.push(index + shiftT, removing, insertion);
+      result.push(index + shiftT + changeT - truncateT, removing, insertion);
+    changeT += O.splice.getShift(theirs, t);
   }
 
-  return result
+  return O.normalize(result)
 }
