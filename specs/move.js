@@ -194,7 +194,6 @@ describe('O.move', function() {
       var r = [["move",44,15,61],[61,2,"0000000"]]
 
       var rr = O.compress(r, [[61,2,"0000000"], ["move",44,15,61]]);
-      debugger
       var b = transform(l, rr);
       var a = transform(l, r)
       expect(a).toEqual(b)

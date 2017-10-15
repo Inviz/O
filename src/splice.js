@@ -471,15 +471,10 @@ O.splice.splice = function(ours, theirs, normalized, safe) {
           } else {
             if (insertion)
               result.push(oIndex + changeT + shiftT - truncateT, 0, insertion)
-            shiftT += O.splice.getLength(insertion)
+            truncateT -= O.splice.getLength(insertion)
             insertion = '';
-            debugger
-            if (!removing) {
-
+            if (!removing)
               break
-            } else {
-              debugger
-            }
           }
           index += intersection
           shiftT += intersection
@@ -496,6 +491,8 @@ O.splice.splice = function(ours, theirs, normalized, safe) {
     if (removing || insertion)
       result.push(index + shiftT + changeT - truncateT, removing, insertion);
     changeT += O.splice.getShift(theirs, t);
+      shiftT += shiftL
+      shiftL = 0;
   }
 
   return O.normalize(result)

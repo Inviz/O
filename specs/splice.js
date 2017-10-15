@@ -237,6 +237,16 @@ describe('O.splice', function() {
                   [ 1, 0, '222', 11, 0, '1'],  [0, 0,'1', 24, 0, '3'] )
 
       })
+
+      it('fuzzed', function() {
+        debugger
+        transform([28, 8, "2222222"],  [22, 8, "", 23, 12, "7777777"],
+         [ 22, 1, '2222222' ] , [22, 6, '', 29, 7, '7777777' ]  )
+        transform([0, 5, ""],  [3, 11, "22222222", 16, 7, "1111111"], 
+         [ 0, 3, '' ] , [0, 9, '22222222', 13, 7, '1111111']  )
+        transform([5, 8, ""],  [3, 3, "99", 6, 10, "11111"], 
+        [ 5, 1, '' ], O.normalize([ 3, 2, '99', 5, 0, '11111', 10, 4, '' ]  ))
+      })
     })
 
     describe('single chunk', function() {
@@ -244,7 +254,6 @@ describe('O.splice', function() {
         transform([0, 4, '2'],  [1, 2, '1'],
                   [0, 1, '', 1, 1, '2'],  [0,0,'1'])
 
-        debugger
         transform([0, 1, '2'],  [1, 2, '1'],
                   [0, 1, '', 1, 0, '2'],  [0,0,'1', 2, 2, ''])
 
@@ -346,8 +355,6 @@ describe('O.splice', function() {
       })
     });
     it ('should resolve insertions at different positions', function() {
-      debugger
-
       transform([1, 0, '1', 5, 0, '22'], [3, 0, '2', 7, 0, '2'],
                 [1, 0, '1', 6, 0, '22'], [4, 0, '2', 10, 0, '2'])
       
@@ -367,9 +374,18 @@ describe('O.splice', function() {
                 undefined,  undefined)
 
     })
-    it ('should resolve concurrent removals', function() {
+    it ('should simplify duplicate commands', function() {
+      transform([1, 0, '1'],  [1, 0, '1'],
+                undefined,  undefined)
+      transform([1, 1, ''],  [1, 1, ''],
+                undefined,  undefined)
+      transform([1, 1, '1'],  [1, 1, '1'],
+                undefined,  undefined)
+      transform([1, 1, '12'],  [1, 1, '12'],
+                undefined,  undefined)
 
-      debugger
+    })
+    it ('should resolve concurrent removals', function() {
       transform([3, 9, ""],  [7, 2, "", 8, 5, ""],
                 [3, 5, ''],  [3, 3, ""])
 
@@ -386,11 +402,8 @@ describe('O.splice', function() {
       transform([3, 9, ""],  [7, 2, ""],
                 [3, 7, ''],  undefined)
 
-
-
     })
     it ('should resolve concurrent insertions', function() {
-      debugger
       transform([1, 0, '1'],  [1, 0, '2'],
                 [1, 0, '1'],  [2, 0, '2'])
       transform([1, 0, '2'],  [1, 0, '1'],
@@ -425,8 +438,6 @@ describe('O.splice', function() {
                 [2, 1, '2'],  [1, 0, '1'])
     })
     it ('should resolve concurrent replacements caught by fuzzer', function() {
-      debugger
-
       transform( [20, 10, "6666"], [19, 9, "99999999"] , 
         [ 19, 0, '6666', 31, 2, '' ] , [ 19, 1, '', 23, 0, '99999999' ])
 
@@ -499,7 +510,6 @@ describe('O.splice', function() {
 
     })
     it ('should handle concurrent multicharacter replacements', function() {
-      debugger
       transform([1, 2, '111'],  [2, 2, '222'],
                 [1, 1, '111'],  [4, 1, '222'])
       transform([1, 2, '111'],  [1, 1, '222'],
@@ -526,14 +536,14 @@ describe('O.splice', function() {
         transform(op1, op2)
       }
     })
-    xit ('should resolve replacements (10000 fuzzy runs)', function() {
+    it ('should resolve replacements (10000 fuzzy runs)', function() {
       for (var runs = 0; runs < 100; runs++) {
         var op1 = [];
-        for (var i = 0, j = Math.floor(Math.random() * 2); i < j; i++) {
+        for (var i = 0, j = 1; i < j; i++) {
           op1.push(Math.floor(Math.random() * 32), Math.floor(Math.random() * 12) + 1, Array(Math.floor(Math.random() * 10)).join(Math.floor(Math.random() * 10)))
         }
         var op2 = [];
-        for (var i = 0, j = Math.floor(Math.random() * 2); i < j; i++) {
+        for (var i = 0, j = 2; i < j; i++) {
           op2.push(Math.floor(Math.random() * 32), Math.floor(Math.random() * 12) + 1, Array(Math.floor(Math.random() * 10)).join(Math.floor(Math.random() * 10)))
         }
         transform(op1, op2)
