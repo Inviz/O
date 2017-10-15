@@ -396,7 +396,7 @@ O.splice.splice = function(ours, theirs, normalized, safe) {
     return
 
   var result = [];
-  var shiftO = 0;
+  var shiftL = 0;
   var shiftT = 0;
 
   theirs: for (var t = 0, o = 0, tt = theirs.length; t < tt; t += 3) {
@@ -408,19 +408,26 @@ O.splice.splice = function(ours, theirs, normalized, safe) {
       if (index <= ours[o]) {
         // our range intersects their range at start
         if (index + removing >= ours[o]) {
-          var before = index + removing - ours[o]
-
+          var before = removing - (index + removing - ours[o])
+          var end = index + removing - ours[o] - ours[o + 1]
+          var after = Math.max(0, end)
+          shiftL += removing - before - after;
+          removing = after;
           if (insertion && ours[o + 2] && O.splice.compare(ours, o, theirs, t) < 0) {
-            if (removing != before) {
-              result.push(index, removing - before, '');
+            if (before) {
+              result.push(index, before, '');
             }
+          if (end < 0)
+            index += O.splice.getLength(ours[o + 2])
           } else {
-            result.push(index, removing - before, insertion);
-            shiftT += O.splice.getLength(insertion)
+            if (insertion || before)
+            result.push(index, before, insertion);
+            index += O.splice.getLength(insertion)
             insertion = ''
           }
-          removing = Math.max(0, index + removing - ours[o] - ours[o + 1])
-          shiftT += O.splice.getLength(ours[o + 2])
+          if (end < 0)
+            break
+          //shiftT += O.splice.getLength(ours[o + 2])
 
         // our range at the same place as theirs
         //} else if (index === ours[o]) {
@@ -447,7 +454,7 @@ O.splice.splice = function(ours, theirs, normalized, safe) {
             debugger
             //if (index > ours[o]) {
             //  result.push(ours[o], index - ours[o], '')
-            //  result.push(ours[o] + O.splice.getLength(ours[o]), 0, '')
+            //  result.push(ours[o] + O.splice.getLength(ours[o + 2]), 0, '')
             //} else {
 //
               index = ours[o] + O.splice.getLength(ours[o + 2]);
@@ -466,11 +473,14 @@ O.splice.splice = function(ours, theirs, normalized, safe) {
           if (insertion && ours[o + 2] && O.splice.compare(ours, o, theirs, t) < 0) {
             //result.push(index, removing - intersection, insertion)
           } else {
-            result.push(ours[o], 0, insertion)
-            shiftT += O.splice.getLength(ours[o])
+            if (insertion)
+              result.push(ours[o], 0, insertion)
+            shiftT += O.splice.getLength(ours[o + 2])
             index = ours[o] + O.splice.getLength(insertion)
             insertion = '';
           }
+          break
+
         // our range ends at the same place as their range starts
         //} else if (index == ours[o] + ours[o + 1]) {
         //  if (ours[o + 2] && insertion && O.splice.compare(ours, o, theirs, t) > 0) {
@@ -482,9 +492,11 @@ O.splice.splice = function(ours, theirs, normalized, safe) {
         //  }
         // our range comes before theirs
         } else if (index > ours[o]) {
-          shiftT += O.splice.getShift(ours, o)
+          //shiftT += O.splice.getShift(ours, o)
         }
       }
+      shiftT += O.splice.getShift(ours, o) + shiftL
+      shiftL = 0;
     }
 
     if (removing || insertion)
