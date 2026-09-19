@@ -55,8 +55,22 @@ O.merge.concat = function(ours, theirs, callback) {
   return O.merge(ours, theirs, O, true);
 }
 
+// A transform returns what THEIRS contributes, rebased -- never our own operations, which
+// the caller has already applied. So this iterates theirs and emits nothing for a key theirs
+// never touched; the generic O.merge walker starts from ours and cannot express that.
 O.merge.merge = function(ours, theirs) {
-  return O.merge(ours, theirs, O.transform, true); 
+  var result;
+  for (var property in theirs) {
+    var value = (property in ours)
+      ? O.transform(ours[property], theirs[property])
+      : theirs[property];
+    if (value !== undefined) {
+      if (result === undefined)
+        result = theirs instanceof Array ? [] : {};
+      result[property] = value;
+    }
+  }
+  return result;
 }
 
 /* Splice affects numeric indecies in merged objects. 

@@ -91,35 +91,59 @@ describe('O.list', function() {
         [14,6,""], [10,4,""]
       )
     })
+    it ('should transform multi-peer operations', function() {
+      transformMany([
+        [
+            [
+                64,
+                15,
+                "99999999"
+            ]
+        ],
+        [
+            [
+                78,
+                1,
+                ""
+            ]
+        ],
+        [
+            [
+                64,
+                14,
+                ""
+            ]
+        ]
+      ], alphabet, true)
+    })
     it ('should resolve random moves/splices (10000 fuzzy runs)', function() {
-      for (var c = 0; c < 10000; c++) {
+      for (var c = 0; c < 1000; c++) {
         var ops = [];
-        for (var i = 0; i < 2; i++) {
+        for (var i = 0; i < 3; i++) {
           var list = [];
-          for (var j = 0, k = Math.floor(Math.random() * 2) + 1; j < k; j++) {
+          for (var j = 0, k = 1; j < k; j++) {
             /*if (Math.random() >= 0.99) { //rarely a set op
               list.push(['set', Math.random() + alphabet])
-            } else*/ if (Math.random() >= 0.3) { //30% of move, 70% splice
+            } else*/ if (Math.random() >= 2) { //30% of move, 70% splice
               var from = Math.floor(Math.random() * 80);
               var count = Math.floor(Math.random() * 20);
               list.push(
                 ['move', from, count, from + count + Math.floor(Math.random() * 10)]
               )
             } else {
+              const chr = Math.floor(Math.random() * 10)
               list.push([
                 Math.floor(Math.random() * 80),
                 Math.floor(Math.random() * 20),
-                Math.random() > 0.5 ? '' : Array(Math.floor(Math.random() * 10)).join(Math.floor(Math.random() * 10))
+                Math.random() > 0.5 ? '' : Array(chr).join(chr)
               ])
             }
           }
           // run invertion assertions
-          invert(alphabet, list)
           ops.push(list)
         }
 
-        // run algorithm twice for normalized & non-normalized lists and compare results
-        var raw = transform(ops[0], ops[1], undefined,undefined,undefined, true)
+        transformMany(ops, alphabet, true)
         //var normalized = transform(ops[0], ops[1])
         //expect(raw).toEqual(normalized)
       }

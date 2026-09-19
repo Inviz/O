@@ -83,9 +83,16 @@ O['+'].transform =
 O['-'].transform =
 O['rot'].transform = function(ours, theirs, returnOurs) {
   if (ours[0] === theirs[0]) {
+    // Same operator commutes, so theirs applies unchanged on top of ours. Returning
+    // [ours, theirs] re-applies an operation the caller already has.
     if (ours[0] != 'rot' || ours[2] === theirs[2])
-      return [ours, theirs]
+      return theirs
   }
+
+  // A set replaces the value outright, so there is no arithmetic left to re-apply on top
+  // of it. The ordering below would sandwich ours around the new value.
+  if (O.typeof(theirs) === 'set')
+    return theirs;
 
   // apply theirss in reverse lexicographical order 
   // ("+" comes earlier than '/' in ascii table)

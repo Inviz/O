@@ -48,22 +48,127 @@ O.splice = function(ours, theirs, normalized) {
 }
 O.splice.index = 1;
 
+// ===========================================================================
+// The origin-frame edit set.
+//
+// HEAD decides using progressively-updated coordinates. They are path-dependent: the same pair
+// of operations presents different numbers depending on the order a peer folded its log in, so
+// two peers reach opposite branches on the same question. That is the TP2 violation, and no
+// ordering of live-frame quantities recovers from it.
+//
+// `_E` is the operation stated in coordinates no fold order can move: positions in the document
+// every peer shares. A deletion is a set of original positions. An insertion is a run anchored
+// before an original position, ordered against its rivals at the same anchor by the library's
+// own rule (shorter removal first, then content). Composition is set union, which is
+// commutative and idempotent -- so every peer that has seen the same operations holds the same
+// `_E` and renders the same document, whatever order they arrived in.
+//
+// The array remains an ordinary progressive splice list: `_E` decides, the array transports.
+// ===========================================================================
+
+O.splice.runKey = function(run) {
+  return run.a + '\u0000' + run.r + '\u0000' + JSON.stringify(O.splice.getValue(run.v));
+}
+
+// Derive the edit set from a bare splice list: origins by prefix sum, one insertion run per
+// range. Correct for a FIRST-GENERATION list, which is the only one that has no `_E` to carry.
+O.splice.edits = function(list) {
+  if (list == null) return { del: [], ins: [] };
+  if (list._E) return list._E;
+  var del = [], ins = [], diff = 0;
+  for (var i = 0; i < list.length; i += 3) {
+    var a = list[i] - diff, r = list[i + 1], v = list[i + 2];
+    if (r > 0) del.push([a, a + r]);
+    if (O.splice.getLength(v) > 0) ins.push({ a: a, r: r, v: v });
+    diff += O.splice.getLength(v) - r;
+  }
+  return { del: del, ins: ins };
+}
+
+O.splice.frame = function(list) {
+  if (list)
+    Object.defineProperty(list, '_frame', { value: true, writable: true, enumerable: false, configurable: true });
+  return list;
+}
+
+O.splice.attach = function(list, E) {
+  if (list && E)
+    Object.defineProperty(list, '_E', { value: E, writable: true, enumerable: false, configurable: true });
+  return list;
+}
+
+O.splice.union = function(a, b) {
+  var del = a.del.concat(b.del), seen = {}, ins = [];
+  a.ins.concat(b.ins).forEach(function (run) {
+    var k = O.splice.runKey(run);
+    if (seen[k]) return;              // identical insertions at one anchor count once, as HEAD does
+    seen[k] = 1; ins.push(run);
+  });
+  return { del: del, ins: ins };
+}
+
+O.splice.cmpRun = function(x, y) {
+  if (x.a !== y.a) return x.a - y.a;
+  if (x.r !== y.r) return x.r < y.r ? -1 : 1;
+  return O.compare(O.splice.getValue(x.v), O.splice.getValue(y.v));
+}
+
+// Render an edit set as the token sequence of the document it describes, over origin positions
+// [0, n). A token is either an original position that survived, or an inserted run.
+O.splice.tokens = function(E, n) {
+  var dead = {};
+  for (var i = 0; i < E.del.length; i++)
+    for (var p = E.del[i][0]; p < E.del[i][1]; p++) dead[p] = 1;
+  var runs = E.ins.slice().sort(O.splice.cmpRun);
+  var out = [], ri = 0;
+  for (var p = 0; p <= n; p++) {
+    while (ri < runs.length && runs[ri].a <= p) {
+      out.push({ k: 'r' + O.splice.runKey(runs[ri]), run: runs[ri] });
+      ri++;
+    }
+    if (p < n && !dead[p]) out.push({ k: 'o' + p, p: p });
+  }
+  while (ri < runs.length) { out.push({ k: 'r' + O.splice.runKey(runs[ri]), run: runs[ri] }); ri++; }
+  return out;
+}
+
+O.splice.span = function(E) {
+  var n = 0;
+  for (var i = 0; i < E.del.length; i++) if (E.del[i][1] > n) n = E.del[i][1];
+  for (var i = 0; i < E.ins.length; i++) if (E.ins[i].a > n) n = E.ins[i].a;
+  return n;
+}
+
 // Produce an optimal sorted set of non-empty 
 // spliced ranges without intersections
 O.splice.normalize = function(ours, once) {
   var result = [];
   for (var i = 0, j = ours.length; i < j; i += 3)
     O.splice.push(result, ours[i], ours[i + 1], ours[i + 2]);
-  if (result.length) 
-    return result;
+  // Carry an edit set only if there is one to carry. Attaching a DERIVED one would make a
+  // sequential own operation indistinguishable from a rebased remote one, and they compose
+  // by different rules.
+  if (result.length) {
+    if (ours._frame) O.splice.frame(result);
+    return ours._E ? O.splice.attach(result, ours._E) : result;
+  }
 }
 
 
 O.splice.concat = function(ours, theirs) {
+  // Two different compositions wear the same name. A REBASED REMOTE contribution (it carries
+  // `_E`) is concurrent with ours, so the edit sets union. A SEQUENTIAL own operation does not
+  // carry one: its coordinates are relative to the document ours already produced, it may edit
+  // characters ours inserted, and union would be a lie -- but `push` merges it into a
+  // non-intersecting list whose ranges are all original-anchored, so the origin frame can
+  // simply be re-derived from the merged array afterwards.
+  var concurrent = theirs._E !== undefined;
+  var E = concurrent ? O.splice.union(O.splice.edits(ours), theirs._E) : undefined;
   var result = ours.slice();
+  if (ours._frame) O.splice.frame(result);
   for (var t = 0, tt = theirs.length; t < tt; t += 3)
     O.splice.push(result, theirs[t], theirs[t + 1], theirs[t + 2])
-  return result;
+  return O.splice.attach(result, E || O.splice.edits(result));
 }
 
 // Push a splice into a list, simplifying all intersections
@@ -269,7 +374,16 @@ O.splice.compare = function(ours, l, theirs, r) {
   return O.compare(O.splice.getValue(ours[l + 2]), O.splice.getValue(theirs[r + 2]))
 }
 
-/* # Transform SPLICE set against another SPLICE set
+/* # Transform SPLICE set against another SPLICE set -- in LIVE coordinates (unchanged)
+
+This is the original algorithm, kept verbatim and still the one that runs everywhere except
+where a whole composed log is being transformed against another. It walks both lists in
+lockstep with running shifts. Those shifts are path-dependent, which is the defect; it is
+retained because an operation handed over ALONE, out of the middle of a log, has no position in
+the shared document for the origin frame to use.
+
+Original header follows.
+# Transform SPLICE set against another SPLICE set
 Most of the time, splices just push each other changing the counters.
 Though they also can get into conflicting situations:
 1. Splice can completely remove another
@@ -280,7 +394,7 @@ Though they also can get into conflicting situations:
 To transform splice lists against each other in one pass, they need
 to be normalized first to simplify all intersecting ranges.
 */
-O.splice.splice = function(ours, theirs, normalized, safe) {
+O.splice.live = function(ours, theirs, normalized, safe) {
   if (!normalized) {
     ours = O.splice.normalize(ours)
     theirs = O.splice.normalize(theirs)
@@ -373,4 +487,93 @@ O.splice.splice = function(ours, theirs, normalized, safe) {
     }
   }
   return result.length ? result : undefined;
+}
+
+/* # Transform SPLICE set against another SPLICE set
+
+The answer is the difference between the document we hold now and the document we should hold
+once theirs is folded in -- computed in origin coordinates, where "the document we should hold"
+is a set union and therefore the same for every peer, whatever order the operations arrived in.
+The result is an ordinary progressive splice list; `_E` rides along so the next fold can do the
+same thing again.
+*/
+O.splice.rebase = function(ours, theirs, normalized, safe) {
+  if (!normalized) {
+    ours = O.splice.normalize(ours)
+    theirs = O.splice.normalize(theirs)
+  }
+  if (ours === undefined)
+    return theirs;
+  if (theirs === undefined)
+    return
+
+  var Eo = O.splice.edits(ours), Et = O.splice.edits(theirs);
+  var Eb = O.splice.union(Eo, Et);
+  var n = Math.max(O.splice.span(Eo), O.splice.span(Et));
+  var To = O.splice.tokens(Eo, n), Tb = O.splice.tokens(Eb, n);
+
+  var inOurs = {}, inBoth = {};
+  for (var i = 0; i < To.length; i++) inOurs[To[i].k] = 1;
+  for (var i = 0; i < Tb.length; i++) inBoth[Tb[i].k] = 1;
+
+  // `pos` is a LIVE character index, not a token index: an inserted run is one token and any
+  // number of characters.
+  var width = function (tok) {
+    return tok.p !== undefined ? 1 : O.splice.getLength(tok.run.v);
+  };
+  var pieces = [], i = 0, j = 0, pos = 0;
+  while (i < To.length || j < Tb.length) {
+    if (i < To.length && j < Tb.length && To[i].k === Tb[j].k) { pos += width(To[i]); i++; j++; continue; }
+    if (j < Tb.length && !inOurs[Tb[j].k]) {
+      var value = null;
+      while (j < Tb.length && !inOurs[Tb[j].k]) {
+        value = value === null ? Tb[j].run.v : O.splice.value(value, null, 0, Tb[j].run.v);
+        j++;
+      }
+      pieces.push({ abs: pos, del: 0, ins: value });
+      continue;
+    }
+    if (i < To.length && !inBoth[To[i].k]) {
+      var from = pos;
+      while (i < To.length && !inBoth[To[i].k]) { pos += width(To[i]); i++; }
+      pieces.push({ abs: from, del: pos - from, ins: null });
+      continue;
+    }
+    pos += width(To[i]); i++; j++;   // unreachable while both renderings use one total order
+  }
+
+  // A deletion and an insertion landing at the same place are one splice triple: the triple's
+  // value replaces what it removes, which is the same document either way.
+  var result = [], shift = 0, k = 0;
+  while (k < pieces.length) {
+    var p = pieces[k], del = p.del, ins = p.ins;
+    while (k + 1 < pieces.length && pieces[k + 1].abs === p.abs + del) {
+      var q = pieces[++k];
+      del += q.del;
+      ins = ins === null ? q.ins : (q.ins === null ? ins : O.splice.value(ins, null, 0, q.ins));
+    }
+    k++;
+    if (ins === null) ins = (typeof theirs[2] === 'string') ? '' : [];
+    if (del === 0 && O.splice.getLength(ins) === 0) continue;
+    result.push(p.abs + shift, del, ins);
+    shift += O.splice.getLength(ins) - del;
+  }
+
+  if (!result.length)
+    return;
+  return O.splice.frame(O.splice.attach(result, Et));
+}
+
+
+// Which frame decides.
+//
+// The origin frame is only meaningful for a list that states a peer's WHOLE contribution
+// relative to the document every peer shares -- that is what `O.list.compose` builds and marks
+// with `_frame`. Anything else (a single operation pulled out of the middle of a log, a splice
+// folded pairwise inside a mixed log) has no such coordinate, and for those the original
+// live-coordinate algorithm still runs.
+O.splice.splice = function(ours, theirs, normalized, safe) {
+  if (ours && theirs && ours._frame && theirs._frame)
+    return O.splice.rebase(ours, theirs, normalized, safe);
+  return O.splice.live(ours, theirs, normalized, safe);
 }

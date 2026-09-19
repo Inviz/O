@@ -1,0 +1,13 @@
+{
+  "name": "o",
+  "version": "1.0.0",
+  "description": "**OT** is a useful technique that merges concurrent changes to data in a determenistic way. Suppose two people start with identical JSON object, and start making changes to it by assigning keys, patching strings or applying math to numbers. Those two send changesets to each other, and OT ensures both would see identical result.",
+  "main": "index.js",
+  "scripts": {
+    "test": "node specs/runner/run.js",
+    "test:sweep": "node specs/runner/run.js --repeat 25",
+    "test:random": "node specs/runner/run.js --random"
+  },
+  "author": "",
+  "license": "ISC"
+}
